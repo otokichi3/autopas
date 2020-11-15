@@ -254,7 +254,7 @@ def book_gym(using_selenium):
                     nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
                     for i, night in enumerate(nights): # at most 7
                         if "facmdstime" not in night.get("class") and 'maru' in night.find("img").get("src"):
-                            print('[空]' + ' ' + date_list[i] + ' ' + gym.getName() + '-' + court.getName())
+                            print('  [空]' + ' ' + date_list[i] + ' ' + gym.getName() + '-' + court.getName())
                             noting = False
                     date_list.clear()
                     # logging.warning('debug: {}'.format(mornings[1].find("img").get("src")))
@@ -265,7 +265,7 @@ def book_gym(using_selenium):
         if using_selenium:
             driver.quit()
         if nothing:
-            print("空きはありませんでした")
+            print("  空きはありませんでした")
 
 """
 Use the Chrome DriverService.
