@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
+    />
+    <title>opas</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.6.0/base64.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <v-app>
+        <v-main>
+          <v-container fluid>
+            Hello world
+            <img :src="kaptchaUrl" />
+          </v-container>
+          <v-row justify="center">
+            <v-date-picker v-model="picker" locale="ja"></v-date-picker>
+          </v-row>
+          <v-row justify="center">
+            <v-radio-group v-model="radioGroup">
+              <v-radio
+                v-for="(gym, index) in gyms"
+                :key="gym.record"
+                :label="gym.gym_name"
+                :value="gym.record"
+              ></v-radio>
+            </v-radio-group>
+          </v-row>
+        </v-main>
+      </v-app>
+    </div>
+  </body>
+  <script>
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      data: {
+        kaptchaUrl: "kaptcha.png",
+        picker: new Date().toISOString().substr(0, 10),
+        radioGroup: 1,
+        gyms: [
+          {
+            record: "i_record0",
+            gym_name:
+              "丸善インテックアリーナ大阪（中央体育館） サブアリーナ１／２面",
+          },
+          { record: "i_record1", gym_name: "千島体育館 体育場１／２面" },
+          {
+            record: "i_record2",
+            gym_name: "フィットネス２１東淀川体育館 体育場１／２面",
+          },
+          { record: "i_record3", gym_name: "北スポーツセンター 第１体育場" },
+          { record: "i_record4", gym_name: "都島スポーツセンター 第１体育場" },
+          { record: "i_record5", gym_name: "都島スポーツセンター 第２体育場" },
+          { record: "i_record6", gym_name: "福島スポーツセンター 体育場" },
+          {
+            record: "i_record7",
+            gym_name: "明治スポーツプラザ此花スポーツセンター 第１体育場",
+          },
+          { record: "i_record8", gym_name: "中央スポーツセンター 第１体育場" },
+          { record: "i_record9", gym_name: "西スポーツセンター 第１体育場" },
+          {
+            record: "i_record10",
+            gym_name: "港スポーツセンター 第１体育場１／２面",
+          },
+          { record: "i_record11", gym_name: "港スポーツセンター 第２体育場" },
+          {
+            record: "i_record12",
+            gym_name: "大正スポーツセンター 第１体育場１／２面",
+          },
+          { record: "i_record13", gym_name: "大正スポーツセンター 第２体育場" },
+          {
+            record: "i_record14",
+            gym_name: "天王寺スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record15",
+            gym_name: "天王寺スポーツセンター 第２体育場",
+          },
+          {
+            record: "i_record16",
+            gym_name:
+              "明治スポーツプラザ浪速スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record17",
+            gym_name: "明治スポーツプラザ浪速スポーツセンター 第２体育場",
+          },
+          {
+            record: "i_record18",
+            gym_name: "サンエイワーク西淀川スポーツセンター 体育場",
+          },
+          { record: "i_record19", gym_name: "淀川スポーツセンター 第１体育場" },
+          { record: "i_record20", gym_name: "淀川スポーツセンター 第２体育場" },
+          {
+            record: "i_record21",
+            gym_name: "東淀川スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record22",
+            gym_name: "ゼット東成スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record23",
+            gym_name: "ゼット東成スポーツセンター 第２体育場",
+          },
+          {
+            record: "i_record24",
+            gym_name: "ゼット生野スポーツセンター 第１体育場",
+          },
+          { record: "i_record25", gym_name: "旭スポーツセンター 第１体育場" },
+          {
+            record: "i_record26",
+            gym_name: "城東スポーツセンター 第１体育場１／２面",
+          },
+          { record: "i_record27", gym_name: "城東スポーツセンター 第２体育場" },
+          { record: "i_record28", gym_name: "鶴見スポーツセンター 第１体育場" },
+          {
+            record: "i_record29",
+            gym_name: "サンエイワーク阿倍野スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record30",
+            gym_name: "住之江スポーツセンター 第１体育場",
+          },
+          {
+            record: "i_record31",
+            gym_name: "サンエイワーク住吉スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record32",
+            gym_name:
+              "フィットネス２１東住吉スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record33",
+            gym_name: "ＨＳＴ平野スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record34",
+            gym_name: "ＨＳＴ西成スポーツセンター 第１体育場１／２面",
+          },
+          {
+            record: "i_record35",
+            gym_name: "ＨＳＴ西成スポーツセンター 第２体育場",
+          },
+          { record: "i_record36", gym_name: "ＨＳＴ扇町プール 体育場" },
+        ],
+      },
+      mounted() {
+        // axios
+        //   .post("http://localhost:3000/book", {
+        //     gymRecord: "i_record10",
+        //     year: "2020",
+        //     month: "12",
+        //     day: "01",
+        //     responseType: "arrayBuffer",
+        //   })
+        //   .then((response) => {
+        //     const prefix = `data:${response.headers["content-type"]};base64,`;
+        //     this.kaptchaUrl = prefix + response.data;
+        //   });
+      },
+    });
+  </script>
+</html>
