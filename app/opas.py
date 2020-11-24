@@ -235,7 +235,7 @@ class Opas:
     def create_message_from_list(self, all_vacants: List[List[List[str]]]) -> str:
         """空きリストからLINEメッセージを作成する"""
         message = ""
-        for i, vacant_list in enumerate(all_vacants):
+        for i, vacant_list in enumerate(reversed(all_vacants)):
             message += "時間帯{}\n".format(i+1)
             if len(vacant_list) > 0:
                 for vacant in vacant_list:
@@ -264,6 +264,7 @@ CORS(api)
 @api.route('/vacants', methods=['GET'])
 def get_vacant():
     """空きを取得する"""
+    # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
     opas = Opas()
     opas.init_driver()
     opas.select_category(is_login=False)
