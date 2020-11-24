@@ -182,7 +182,7 @@ class Opas:
                         self.timeframes.append(timeframe)
                     else:
                         is_maru_in = 'maru' in morning.find("img").get("src")
-                        is_yoyaku_mark = '予' in morning.text
+                        is_yoyaku_mark = '予' in morning.text or 'yo.png' in morning.find("img").get("src")
                         if is_maru_in or is_yoyaku_mark:
                             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
                             morning_vacants.append(vacant)
@@ -194,7 +194,7 @@ class Opas:
                         self.timeframes.append(timeframe)
                     else:
                         is_maru_in = 'maru' in afternoon.find("img").get("src")
-                        is_yoyaku_mark = '予' in afternoon.text
+                        is_yoyaku_mark = '予' in afternoon.text or 'yo.png' in afternoon.find("img").get("src")
                         if is_maru_in or is_yoyaku_mark:
                             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
                             afternoon_vacants.append(vacant)
@@ -206,7 +206,7 @@ class Opas:
                         self.timeframes.append(timeframe)
                     else:
                         is_maru_in = 'maru' in evening.find("img").get("src")
-                        is_yoyaku_mark = '予' in evening.text
+                        is_yoyaku_mark = '予' in evening.text or 'yo.png' in evening.find("img").get("src")
                         if is_maru_in or is_yoyaku_mark:
                             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
                             evening_vacants.append(vacant)
@@ -218,7 +218,7 @@ class Opas:
                         self.timeframes.append(timeframe)
                     else:
                         is_maru_in = 'maru' in night.find("img").get("src")
-                        is_yoyaku_mark = '予' in night.text
+                        is_yoyaku_mark = '予' in night.text or 'yo.png' in night.find("img").get("src")
                         if is_maru_in or is_yoyaku_mark:
                             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
                             night_vacants.append(vacant)
