@@ -124,7 +124,7 @@ class Opas:
         x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
         x_category_select = "//div[@id='mmaincolumn']/div[@class='tablebox']"
         today = datetime.date.today()
-        first_week = today + relativedelta(months=1)
+        first_week = today + relativedelta(months=2)
         first_week = first_week.replace(day=1)
         for i in range(5):
             target_week = first_week + relativedelta(weeks=+i)
