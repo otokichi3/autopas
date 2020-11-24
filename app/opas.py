@@ -28,6 +28,7 @@ OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
 LINE_TOKEN = os.environ['line_token']
 CAPTCHA_KEY = os.environ['captcha_key']
+COURT_NUM = 37
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -105,9 +106,9 @@ class Opas:
     def select_gym(self, is_all: bool = False, rec_nums: List[str] = []):
         """ジムを選択する"""
         if is_all:
-            x_choose_all = "//div[@id='mmaincolumn']/div[@class='tablebox']/div[@class='btncenter']/a[1]/img"
+            for i in range(COURT_NUM):
+                self.__driver.find_element_by_id("i_record{}".format(i)).click()
             x_next = "//div[@id='fmaincolumn']/div[@id='pagerbox']/a[2]"
-            self.__driver.find_element_by_xpath(x_choose_all).click()
             self.__driver.find_element_by_xpath(x_next).click()
             return
 
@@ -124,15 +125,12 @@ class Opas:
         x_category_select = "//div[@id='mmaincolumn']/div[@class='tablebox']"
         today = datetime.date.today()
         first_week = today + relativedelta(months=1)
-        first_week = today + relativedelta(days=13)
         first_week = first_week.replace(day=1)
         for i in range(5):
             target_week = first_week + relativedelta(weeks=+i)
-            self.select_date(
-                target_week.year, target_week.month, target_week.day)
+            self.select_date(target_week.year, target_week.month, target_week.day)
             self.__driver.find_element_by_xpath(x_btn_display).click()
-            inner_html = self.__driver.find_element_by_xpath(
-                x_category_select).get_attribute('innerHTML')
+            inner_html = self.__driver.find_element_by_xpath(x_category_select).get_attribute('innerHTML')
             weekly_htmls.append(inner_html)
 
         # 5週分の HTML を結合して返す
@@ -157,28 +155,17 @@ class Opas:
     @decorator.timer
     def get_vacant_list(self, html) -> List[List[str]]:
         """空きリストを取得する"""
-        vacant_list = []
+        all_vacants = []
+        morning_vacants = []
+        afternoon_vacants = []
+        evening_vacants = []
+        night_vacants = []
         soup = BeautifulSoup(html, "html.parser")
         trs = soup.select('table.facilitiesbox > tbody > tr')
-        # gym_name_list = soup.select('.kaikan_title > span')
-        # gym_table_list = soup.select('.kaikan_title + table')
-        """
-        TODO
-        gym_name_listとgym_table_listは同じ数のため、ループ一回でOK
-        date_listは選択された日付から自明なので取得不要
-        保存形式は[2021/1/23, 1, True, False] = [日付, 枠番, 空き, (予)枠]
-        """
-        # for gym_name in gym_name_list:
-        #     continue
-        #     # print(gym_name.text)
-        # for gym_table in gym_table_list:
-        #     print(gym_table)
-        # return vacant_list
 
         for tr in trs:  # at most 28
             gym_name = tr.td.find(style="float:left")
             court_names = tr.td.find_all(style="float:left; font-weight:bold;")
-            gym_dates = tr.td.table.tbody.select("tr:nth-of-type(2) > th > p.day")
             for court_name in court_names:  # at most 2
                 gym_dates = tr.td.table.tbody.select("tr:nth-of-type(2) > th > p.day")
                 date_list = []
@@ -187,6 +174,42 @@ class Opas:
                     date = datetime.date(2020, int(month_and_day[0]), int(month_and_day[1]))
                     date_list.append(date)
                 # 3:朝、4:昼、5:夕方、6:夜
+                mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                for i, morning in enumerate(mornings):  # at most 7
+                    night_class = morning.get("class")
+                    if "facmdstime" in night_class:
+                        timeframe = morning.text
+                        self.timeframes.append(timeframe)
+                    else:
+                        is_maru_in = 'maru' in morning.find("img").get("src")
+                        is_yoyaku_mark = '予' in morning.text
+                        if is_maru_in or is_yoyaku_mark:
+                            vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
+                            morning_vacants.append(vacant)
+                afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                for i, afternoon in enumerate(afternoons):  # at most 7
+                    night_class = afternoon.get("class")
+                    if "facmdstime" in night_class:
+                        timeframe = afternoon.text
+                        self.timeframes.append(timeframe)
+                    else:
+                        is_maru_in = 'maru' in afternoon.find("img").get("src")
+                        is_yoyaku_mark = '予' in afternoon.text
+                        if is_maru_in or is_yoyaku_mark:
+                            vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
+                            afternoon_vacants.append(vacant)
+                evenings = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                for i, evening in enumerate(evenings):  # at most 7
+                    night_class = evening.get("class")
+                    if "facmdstime" in night_class:
+                        timeframe = evening.text
+                        self.timeframes.append(timeframe)
+                    else:
+                        is_maru_in = 'maru' in evening.find("img").get("src")
+                        is_yoyaku_mark = '予' in evening.text
+                        if is_maru_in or is_yoyaku_mark:
+                            vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
+                            evening_vacants.append(vacant)
                 nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
                 for i, night in enumerate(nights):  # at most 7
                     night_class = night.get("class")
@@ -198,25 +221,32 @@ class Opas:
                         is_yoyaku_mark = '予' in night.text
                         if is_maru_in or is_yoyaku_mark:
                             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
-                            vacant_list.append(vacant)
+                            night_vacants.append(vacant)
                 date_list.clear()
 
-        return vacant_list
+        all_vacants.append(morning_vacants)
+        all_vacants.append(afternoon_vacants)
+        all_vacants.append(evening_vacants)
+        all_vacants.append(night_vacants)
+
+        return all_vacants
 
     @decorator.timer
-    def create_message_from_list(self, vacant_list: List[List[str]]) -> str:
+    def create_message_from_list(self, all_vacants: List[List[List[str]]]) -> str:
         """空きリストからLINEメッセージを作成する"""
-        message = ('\n【18-21時の空き一覧】\n')
-        if len(vacant_list) > 0:
-            for vacant in vacant_list:
-                if vacant.pop(3):
-                    vacant.append(" (予)")
-                message += '  ' + ' '.join(vacant) + '\n'
-            message = common.remove_redundunt(message)
-            message_len = len(message)
-            message = message[0:message_len]
-        else:
-            message += '  なし\n'
+        message = ""
+        for i, vacant_list in enumerate(all_vacants):
+            message += "時間帯{}\n".format(i+1)
+            if len(vacant_list) > 0:
+                for vacant in vacant_list:
+                    if vacant.pop(3):
+                        vacant.append(" (予)")
+                    message += '  ' + ' '.join(vacant) + '\n'
+                message = common.remove_redundunt(message)
+                message_len = len(message)
+                message = message[0:message_len]
+            else:
+                message += '  なし\n'
 
         return message
 
