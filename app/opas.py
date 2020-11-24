@@ -156,7 +156,7 @@ class Opas:
     def get_vacant_list(self, html) -> List[List[str]]:
         """空きリストを取得する"""
         all_vacants = []
-        morning_vacants = []
+        # morning_vacants = []
         afternoon_vacants = []
         evening_vacants = []
         night_vacants = []
@@ -224,7 +224,7 @@ class Opas:
                             night_vacants.append(vacant)
                 date_list.clear()
 
-        all_vacants.append(morning_vacants)
+        # all_vacants.append(morning_vacants)
         all_vacants.append(afternoon_vacants)
         all_vacants.append(evening_vacants)
         all_vacants.append(night_vacants)
