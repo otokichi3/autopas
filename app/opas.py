@@ -174,18 +174,18 @@ class Opas:
                     date = datetime.date(2020, int(month_and_day[0]), int(month_and_day[1]))
                     date_list.append(date)
                 # 3:朝、4:昼、5:夕方、6:夜
-                mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
-                for i, morning in enumerate(mornings):  # at most 7
-                    night_class = morning.get("class")
-                    if "facmdstime" in night_class:
-                        timeframe = morning.text
-                        self.timeframes.append(timeframe)
-                    else:
-                        is_maru_in = 'maru' in morning.find("img").get("src")
-                        is_yoyaku_mark = '予' in morning.text or 'yo.png' in morning.find("img").get("src")
-                        if is_maru_in or is_yoyaku_mark:
-                            vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
-                            morning_vacants.append(vacant)
+                # mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                # for i, morning in enumerate(mornings):  # at most 7
+                #     night_class = morning.get("class")
+                #     if "facmdstime" in night_class:
+                #         timeframe = morning.text
+                #         self.timeframes.append(timeframe)
+                #     else:
+                #         is_maru_in = 'maru' in morning.find("img").get("src")
+                #         is_yoyaku_mark = '予' in morning.text or 'yo.png' in morning.find("img").get("src")
+                #         if is_maru_in or is_yoyaku_mark:
+                #             vacant = [date_list[i-1].strftime('%m/%d(%a)'), gym_name.text, court_name.text, is_yoyaku_mark]
+                #             morning_vacants.append(vacant)
                 afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
                 for i, afternoon in enumerate(afternoons):  # at most 7
                     night_class = afternoon.get("class")
