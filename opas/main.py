@@ -2,6 +2,7 @@ import sys
 import os
 import io
 import csv
+import json
 import logging
 import base64
 import datetime
@@ -52,7 +53,6 @@ class Opas:
     cookie_value = ''
     cookie_domain = 'reserve.opas.jp'
 
-    @decorator.timer
     def init_driver(self):
         """Seleniumドライバを初期化する"""
         # driver = webdriver.Chrome(chromedriver_path, options=options)
@@ -72,7 +72,6 @@ class Opas:
         )
         """
 
-    @decorator.timer
     def login(self, id: str, password: str):
         """OPASにログインする"""
         self.__driver.find_element_by_name("txtRiyoshaCode").send_keys(id)
@@ -80,7 +79,6 @@ class Opas:
         x_login_btn = "//p[@class='login_btn']/img"
         self.__driver.find_element_by_xpath(x_login_btn).click()
 
-    @decorator.timer
     def select_category(self, is_login: bool):
         """カテゴリーを選択する"""
         if is_login:
@@ -102,7 +100,6 @@ class Opas:
         for xpath in xpaths:
             self.__driver.find_element_by_xpath(xpath).click()
 
-    @decorator.timer
     def select_gym(self, is_all: bool = False, rec_nums: List[str] = []):
         """ジムを選択する"""
         if is_all:
@@ -116,7 +113,6 @@ class Opas:
             for rec_num in rec_nums:
                 print(rec_num)
 
-    @decorator.timer
     def get_month_html(self) -> str:
         """一月分のHTMLを取得する"""
         # 翌月の週ごとに HTML を取得する
@@ -135,11 +131,13 @@ class Opas:
 
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
+        # with open('./output.html', 'w') as f:
+        #     f.write(joined)
+
         self.__driver.quit()
 
         return joined
 
-    @decorator.timer
     def select_date(self, y, m, d):
         """年月日を選択する"""
         year = self.__driver.find_element_by_id("optYear")
@@ -152,7 +150,6 @@ class Opas:
         self.month = m
         self.day = d
 
-    @decorator.timer
     def get_vacant_list(self, html) -> List[List[str]]:
         """空きリストを取得する"""
         all_vacants = []
@@ -161,7 +158,121 @@ class Opas:
         evening_vacants = []
         night_vacants = []
         soup = BeautifulSoup(html, "html.parser")
-        trs = soup.select('table.facilitiesbox > tbody > tr')
+        trs = soup.select('table.facilitiesbox > tbody > tr') # 140 のはず
+
+        gym_dict = {}
+        """
+        [ジム: [コート: [時間帯: [空きデータ]]]]
+        """
+        for i, tr in enumerate(trs): # 140
+            logging.info('{}ループ目'.format(int(i/28)+1))
+            gym_name = tr.select_one(".kaikan_title").text
+            shisetu = tr.select(".shisetu_name") # 配列
+            if i < 28:
+                # 最初は辞書を作成する
+                if len(shisetu) == 1:
+                    shisetu_name = shisetu[0].text
+                    gym_dict[gym_name] = {shisetu_name: {0: [], 1: [], 2: [], 3: []}}
+                    # コート名と日付部分とページ移動部分を除く(-3)
+                    timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
+                    if timeframe_num == 3:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        for m, a, n in zip(mornings, afternoons, nights):
+                            if "facmdstime" in m.get('class'):
+                                continue
+                            else:
+                                m_maru = 'maru' in m.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][0].append(m_maru)
+                                a_maru = 'maru' in a.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][1].append(a_maru)
+                                n_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][2].append(n_maru)
+                    else:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        evenings = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
+                        for m, a, e, n in zip(mornings, afternoons, evenings, nights):
+                            if "facmdstime" in m.get('class'):
+                                continue
+                            else:
+                                m_maru = 'maru' in m.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][0].append(m_maru)
+                                a_maru = 'maru' in a.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][1].append(a_maru)
+                                e_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][2].append(e_maru)
+                                n_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][3].append(n_maru)
+                else:
+                    shisetu1_name = shisetu[0].text
+                    shisetu2_name = shisetu[1].text
+                    gym_dict[gym_name] = {shisetu1_name: {0: [], 1: [], 2: [], 3: []}}
+                    gym_dict[gym_name] = {shisetu2_name: {0: [], 1: [], 2: [], 3: []}}
+            else:
+                # 二回目以降は追加する
+                if len(shisetu) == 1:
+                    shisetu_name = shisetu[0].text
+                    # コート名と日付部分とページ移動部分を除く(-3)
+                    timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
+                    if timeframe_num == 3:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        for m, a, n in zip(mornings, afternoons, nights):
+                            if "facmdstime" in m.get('class'):
+                                continue
+                            else:
+                                m_maru = 'maru' in m.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][0].append(m_maru)
+                                a_maru = 'maru' in a.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][1].append(a_maru)
+                                n_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][2].append(n_maru)
+                    else:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        evenings = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
+                        for m, a, e, n in zip(mornings, afternoons, evenings, nights):
+                            if "facmdstime" in m.get('class'):
+                                continue
+                            else:
+                                m_maru = 'maru' in m.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][0].append(m_maru)
+                                a_maru = 'maru' in a.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][1].append(a_maru)
+                                e_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][2].append(e_maru)
+                                n_maru = 'maru' in n.find("img").get("src")
+                                gym_dict[gym_name][shisetu_name][3].append(n_maru)
+                else:
+                    continue
+                    shisetu1_name = shisetu[0].text
+                    shisetu2_name = shisetu[1].text
+                    # コート名と日付部分とページ移動部分を除く(-3)
+                    timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
+                    if timeframe_num == 3:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        for m, a, n in zip(mornings, afternoons, nights):
+                            break
+                    else:
+                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                        evenings = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                        nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
+                        for m, a, e, n in zip(mornings, afternoons, evenings, nights):
+                            break
+            
+        d = json.dumps(gym_dict,ensure_ascii=False, indent=4)
+
+        with open('./output.json', 'w') as f:
+            f.write(d)
+        return ''
 
         for tr in trs:  # at most 28
             gym_name = tr.td.find(style="float:left")
@@ -231,7 +342,6 @@ class Opas:
 
         return all_vacants
 
-    @decorator.timer
     def create_message_from_list(self, all_vacants: List[List[List[str]]]) -> str:
         """空きリストからLINEメッセージを作成する"""
         message = ""
@@ -250,7 +360,6 @@ class Opas:
 
         return message
 
-    @decorator.timer
     def send_line(self, message: str):
         """LINEを送る"""
         bot = LINENotifyBot(access_token=LINE_TOKEN)
@@ -262,96 +371,40 @@ CORS(api)
 
 
 @api.route('/vacants', methods=['GET'])
-def get_vacant():
+def get_vacant(debug=False):
     """空きを取得する"""
     # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
-    opas = Opas()
-    opas.init_driver()
-    opas.select_category(is_login=False)
-    opas.select_gym(is_all=True)
-    html = opas.get_month_html()
-    vacant_list = opas.get_vacant_list(html)
+    # debug: 1=debug, 0=no debug
+    debug = int(request.args.get('debug', 0))
 
-    message = opas.create_message_from_list(vacant_list)
-    opas.send_line(message)
-    return jsonify({
-        'status': 'OK',
-        'data': message
-    })
+    if debug == 1:
+        """空き取得をデバッグする"""
+        """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
+        opas = Opas()
+        # path = './debug.html'
+        path = './output.html'
+        with open(path) as f:
+            html = f.read()
+        vacant_list = opas.get_vacant_list(html)
+        message = opas.create_message_from_list(vacant_list)
+        logging.info(message)
 
+        return message
+    else:
+        opas = Opas()
+        opas.init_driver()
+        opas.select_category(is_login=False)
+        opas.select_gym(is_all=True)
+        html = opas.get_month_html()
+        vacant_list = opas.get_vacant_list(html)
+        return ''
 
-@api.route('/reserve', methods=['GET'])
-def reserve():
-    """予約する"""
-    opas = Opas()
-    opas.init_driver()
-    opas.login(OPAS_ID, OPAS_PASSWORD)
-    opas.select_category(is_login=True)
-    opas.select_gym(is_all=False)
-
-    # 日付選択
-    # TODO 希望の年月日を選択する
-    opas.select_date(2020, 12, 9)
-    x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
-    driver.find_element_by_xpath(x_btn_display).click()
-
-    # ポップアップ OK
-    x_popup_ok = "//input[@id='popup_ok']"
-    driver.find_element_by_xpath(x_popup_ok).click()
-
-    # 予約対象区分選択（日付選択後）
-    # テキトーに最初のやつ選択
-    # TODO 希望の日時を指定する
-    driver.find_element_by_id("i_record1").click()
-
-    # 次に進む
-    driver.find_element_by_xpath("//div[@id='pagerbox']/a[2]").click()
-
-    # 申込内容入力
-    driver.find_element_by_id("numberOfRiyosha").send_keys('22')
-
-    # 次に進む
-    driver.find_element_by_xpath("//div[@id='pagerbox']/a[2]").click()
-
-    # 利用規約
-    driver.find_element_by_id("img_chkRiyoKiyaku").click()
-
-    # kaptcha 取得
-    x_kaptcha_img = "//div[@class='sub_box']/div[2]/p/img[1]"
-    kaptcha = driver.find_element_by_xpath(
-        x_kaptcha_img).screenshot_as_png
-    with open('./kaptcha.png', 'wb') as f:
-        f.write(kaptcha)
-
-    url = "http://2captcha.com/in.php"
-    req_data = {
-        'key': CAPTCHA_KEY,
-        'method': 'base64',
-        'body': base64.b64encode(kaptcha),
-        'lang': 'ja',
-        'numeric': 4,
-        'min_len': 5,
-        'max_len': 5,
-        'language': 2,
-    }
-    res = requests.post(url, req_data)
-    if res.text[0:2] != 'OK':
-        quit('Service error. Error code:' + res.text)
-    captcha_id = res.text[3:]
-    time.sleep(3)  # 解析が終わるまで待つ
-    res_url = "https://2captcha.com/res.php?key=" + \
-        CAPTCHA_KEY + "&action=get&id=" + captcha_id
-    res = requests.get(res_url)
-    if res.status_code == 200 and res.text[0:2] == 'OK':
-        kaptcha_txt = res.text[3:]
-        driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
-        # 確定
-        x_fix_btn = "//div[@class='centered-paranemic-ul-div']/ul/li/a"
-        driver.find_element_by_xpath(x_fix_btn).click()
-        # OK
-        driver.find_element_by_xpath(x_popup_ok).click()
-        time.sleep(5)  # 余韻に浸る
-    return ''
+        # message = opas.create_message_from_list(vacant_list)
+        # opas.send_line(message)
+        # return jsonify({
+        #     'status': 'OK',
+        #     'data': message
+        # })
 
 
 @api.route('/debug', methods=['GET'])
@@ -359,7 +412,8 @@ def debug_get_vacant():
     """空き取得をデバッグする"""
     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
     opas = Opas()
-    path = './debug.html'
+    # path = './debug.html'
+    path = './output.html'
     with open(path) as f:
         html = f.read()
     vacant_list = opas.get_vacant_list(html)
@@ -367,12 +421,6 @@ def debug_get_vacant():
     logging.info('debug: {}'.format(message))
 
     return message
-
-
-@api.errorhandler(404)
-def not_found(error):
-    """404の時のページ"""
-    return make_response(jsonify({'error': 'Not found'}), 404)
 
 
 if __name__ == '__main__':
@@ -383,5 +431,4 @@ if __name__ == '__main__':
     # logging.disable(logging.CRITICAL)
     # logging.info('debug: {}'.format())
 
-    # debug=True にするとホットリロード
     api.run(debug=True, host='0.0.0.0', port=3000)
