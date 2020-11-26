@@ -29,7 +29,8 @@ OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
 LINE_TOKEN = os.environ['line_token']
 CAPTCHA_KEY = os.environ['captcha_key']
-COURT_NUM = 37
+GYM_COUNT = 28
+COURT_COUNT = 37
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -103,7 +104,7 @@ class Opas:
     def select_gym(self, is_all: bool = False, rec_nums: List[str] = []):
         """ジムを選択する"""
         if is_all:
-            for i in range(COURT_NUM):
+            for i in range(COURT_COUNT):
                 self.__driver.find_element_by_id("i_record{}".format(i)).click()
             x_next = "//div[@id='fmaincolumn']/div[@id='pagerbox']/a[2]"
             self.__driver.find_element_by_xpath(x_next).click()
@@ -165,10 +166,10 @@ class Opas:
         [ジム: [コート: [時間帯: [空きデータ]]]]
         """
         for i, tr in enumerate(trs): # 140
-            logging.info('{}ループ目'.format(int(i/28)+1))
+            logging.info('{}ループ目'.format(int(i/GYM_COUNT)+1))
             gym_name = tr.select_one(".kaikan_title").text
             shisetu = tr.select(".shisetu_name") # 配列
-            if i < 28:
+            if i < GYM_COUNT:
                 # 最初は辞書を作成する
                 if len(shisetu) == 1:
                     shisetu_name = shisetu[0].text
@@ -431,4 +432,4 @@ if __name__ == '__main__':
     # logging.disable(logging.CRITICAL)
     # logging.info('debug: {}'.format())
 
-    api.run(debug=True, host='0.0.0.0', port=3000)
+    api.run(debug=True, host='0.0.0.0', port=3001)

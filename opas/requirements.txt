@@ -2,3 +2,5 @@ selenium
 flask
 beautifulsoup4
 python-dateutil
+flask_cors
+requests
