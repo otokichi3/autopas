@@ -123,6 +123,9 @@ class Opas:
         today = datetime.date.today()
         first_week = today + relativedelta(months=2)
         first_week = first_week.replace(day=1)
+        self.year = first_week.year
+        self.month = first_week.month
+        self.day = first_week.day
         for i in range(5):
             target_week = first_week + relativedelta(weeks=+i)
             self.select_date(target_week.year, target_week.month, target_week.day)
@@ -147,9 +150,6 @@ class Opas:
         Select(year).select_by_value("{}".format(y))
         Select(month).select_by_value("{:02d}".format(m))
         Select(day).select_by_value("{:02d}".format(d))
-        self.year = y
-        self.month = m
-        self.day = d
 
     def get_vacant_list(self, html) -> List[List[str]]:
         """空きリストを取得する"""
@@ -159,20 +159,27 @@ class Opas:
         evening_vacants = []
         night_vacants = []
         soup = BeautifulSoup(html, "html.parser")
-        trs = soup.select('table.facilitiesbox > tbody > tr') # 140 のはず
+        trs = soup.select('table.facilitiesbox > tbody > tr')
 
         gym_dict = {}
         """
         [ジム: [コート: [時間帯: [空きデータ]]]]
         """
         for i, tr in enumerate(trs): # 140
-            logging.info('{}ループ目'.format(int(i/GYM_COUNT)+1))
+            base_date = datetime.date(self.year, self.month, self.day)
+            week_index = int(i/GYM_COUNT)
+            base_date += relativedelta(weeks=+week_index)
             gym_name = tr.select_one(".kaikan_title").text
             shisetu = tr.select(".shisetu_name") # 配列
             if i < GYM_COUNT:
-                # 最初は辞書を作成する
+                # 最初(MM/01)は辞書を作成する
                 if len(shisetu) == 1:
                     shisetu_name = shisetu[0].text
+                    """
+                    TODO
+                    時間帯別の値を配列ではなく辞書にし、日付をキー、
+                    状態(0:予約不可、1:予約可、2:空く予定)を値にする。
+                    """
                     gym_dict[gym_name] = {shisetu_name: {0: [], 1: [], 2: [], 3: []}}
                     # コート名と日付部分とページ移動部分を除く(-3)
                     timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
@@ -189,7 +196,7 @@ class Opas:
                                 a_maru = 'maru' in a.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][1].append(a_maru)
                                 n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][2].append(n_maru)
+                                gym_dict[gym_name][shisetu_name][3].append(n_maru)
                     else:
                         mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
                         afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
@@ -203,21 +210,62 @@ class Opas:
                                 gym_dict[gym_name][shisetu_name][0].append(m_maru)
                                 a_maru = 'maru' in a.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][1].append(a_maru)
-                                e_maru = 'maru' in n.find("img").get("src")
+                                e_maru = 'maru' in e.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][2].append(e_maru)
                                 n_maru = 'maru' in n.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][3].append(n_maru)
                 else:
                     shisetu1_name = shisetu[0].text
+                    logging.info(shisetu1_name)
                     shisetu2_name = shisetu[1].text
-                    gym_dict[gym_name] = {shisetu1_name: {0: [], 1: [], 2: [], 3: []}}
-                    gym_dict[gym_name] = {shisetu2_name: {0: [], 1: [], 2: [], 3: []}}
+                    logging.info(shisetu2_name)
+                    gym_dict[gym_name] = {}
+                    gym_dict[gym_name][shisetu1_name] = {0: [], 1: [], 2: [], 3: []}
+                    gym_dict[gym_name][shisetu2_name] = {0: [], 1: [], 2: [], 3: []}
+                    logging.info(gym_dict[gym_name])
+
+                    mornings1 = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                    afternoons1 = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                    evenings1 = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                    nights1 = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
+                    for m, a, e, n in zip(mornings1, afternoons1, evenings1, nights1):
+                        if "facmdstime" in m.get('class'):
+                            continue
+                        else:
+                            m_maru = 'maru' in m.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][0].append(m_maru)
+                            a_maru = 'maru' in a.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][1].append(a_maru)
+                            e_maru = 'maru' in e.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][2].append(e_maru)
+                            n_maru = 'maru' in n.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][3].append(n_maru)
+
+                    mornings2 = tr.td.table.tbody.select("tr:nth-of-type(10) > td")
+                    afternoons2 = tr.td.table.tbody.select("tr:nth-of-type(11) > td")
+                    evenings2 = tr.td.table.tbody.select("tr:nth-of-type(12) > td")
+                    nights2 = tr.td.table.tbody.select("tr:nth-of-type(13) > td")
+                    for m, a, e, n in zip(mornings2, afternoons2, evenings2, nights2):
+                        if "facmdstime" in m.get('class'):
+                            continue
+                        else:
+                            m_maru = 'maru' in m.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][0].append(m_maru)
+                            a_maru = 'maru' in a.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][1].append(a_maru)
+                            e_maru = 'maru' in e.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][2].append(e_maru)
+                            n_maru = 'maru' in n.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][3].append(n_maru)
             else:
-                # 二回目以降は追加する
+                # 二週目(MM/08)以降は追加する
                 if len(shisetu) == 1:
                     shisetu_name = shisetu[0].text
                     # コート名と日付部分とページ移動部分を除く(-3)
                     timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
+                    # TODO 時間帯が3つしかない体育館は上から3つのみのため、
+                    #      その前提でコードを書いて良いかもしれない。
+                    #      →switch 文を使い体育館ごとに処理を分ける。
                     if timeframe_num == 3:
                         mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
                         afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
@@ -231,7 +279,7 @@ class Opas:
                                 a_maru = 'maru' in a.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][1].append(a_maru)
                                 n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][2].append(n_maru)
+                                gym_dict[gym_name][shisetu_name][3].append(n_maru)
                     else:
                         mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
                         afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
@@ -245,29 +293,48 @@ class Opas:
                                 gym_dict[gym_name][shisetu_name][0].append(m_maru)
                                 a_maru = 'maru' in a.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][1].append(a_maru)
-                                e_maru = 'maru' in n.find("img").get("src")
+                                e_maru = 'maru' in e.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][2].append(e_maru)
                                 n_maru = 'maru' in n.find("img").get("src")
                                 gym_dict[gym_name][shisetu_name][3].append(n_maru)
                 else:
-                    continue
                     shisetu1_name = shisetu[0].text
                     shisetu2_name = shisetu[1].text
-                    # コート名と日付部分とページ移動部分を除く(-3)
-                    timeframe_num = len(tr.select("td > table > tbody > tr")) - 3
-                    if timeframe_num == 3:
-                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
-                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
-                        nights = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
-                        for m, a, n in zip(mornings, afternoons, nights):
-                            break
-                    else:
-                        mornings = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
-                        afternoons = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
-                        evenings = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
-                        nights = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
-                        for m, a, e, n in zip(mornings, afternoons, evenings, nights):
-                            break
+
+                    # 施設が2つある場合は必ず時間帯がそれぞれ4つある
+                    mornings1 = tr.td.table.tbody.select("tr:nth-of-type(3) > td")
+                    afternoons1 = tr.td.table.tbody.select("tr:nth-of-type(4) > td")
+                    evenings1 = tr.td.table.tbody.select("tr:nth-of-type(5) > td")
+                    nights1 = tr.td.table.tbody.select("tr:nth-of-type(6) > td")
+                    for m, a, e, n in zip(mornings1, afternoons1, evenings1, nights1):
+                        if "facmdstime" in m.get('class'):
+                            continue
+                        else:
+                            m_maru = 'maru' in m.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][0].append(m_maru)
+                            a_maru = 'maru' in a.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][1].append(a_maru)
+                            e_maru = 'maru' in e.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][2].append(e_maru)
+                            n_maru = 'maru' in n.find("img").get("src")
+                            gym_dict[gym_name][shisetu1_name][3].append(n_maru)
+
+                    mornings2 = tr.td.table.tbody.select("tr:nth-of-type(10) > td")
+                    afternoons2 = tr.td.table.tbody.select("tr:nth-of-type(11) > td")
+                    evenings2 = tr.td.table.tbody.select("tr:nth-of-type(12) > td")
+                    nights2 = tr.td.table.tbody.select("tr:nth-of-type(13) > td")
+                    for m, a, e, n in zip(mornings2, afternoons2, evenings2, nights2):
+                        if "facmdstime" in m.get('class'):
+                            continue
+                        else:
+                            m_maru = 'maru' in m.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][0].append(m_maru)
+                            a_maru = 'maru' in a.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][1].append(a_maru)
+                            e_maru = 'maru' in e.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][2].append(e_maru)
+                            n_maru = 'maru' in n.find("img").get("src")
+                            gym_dict[gym_name][shisetu2_name][3].append(n_maru)
             
         d = json.dumps(gym_dict,ensure_ascii=False, indent=4)
 
@@ -406,23 +473,6 @@ def get_vacant(debug=False):
         #     'status': 'OK',
         #     'data': message
         # })
-
-
-@api.route('/debug', methods=['GET'])
-def debug_get_vacant():
-    """空き取得をデバッグする"""
-    """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-    opas = Opas()
-    # path = './debug.html'
-    path = './output.html'
-    with open(path) as f:
-        html = f.read()
-    vacant_list = opas.get_vacant_list(html)
-    message = opas.create_message_from_list(vacant_list)
-    logging.info('debug: {}'.format(message))
-
-    return message
-
 
 if __name__ == '__main__':
     # (low)DEBUG, INFO, WARNING, ERROR, CRITICAL(high)
