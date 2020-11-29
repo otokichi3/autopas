@@ -439,6 +439,17 @@ class Opas:
 
         return gym_dict
 
+    def get_vacant_status(self, img_src) -> int:
+        STATUS_RESERVED = 0
+        STATUS_VACANT = 1
+        STATUS_TO_BE_VACANT = 2
+        if 'maru.png' in img_src:
+            return STATUS_VACANT
+        elif 'yo.png' in img_src:
+            return STATUS_TO_BE_VACANT
+        else:
+            return STATUS_RESERVED
+
     """
     TODO
     - Cognitive Complexity
