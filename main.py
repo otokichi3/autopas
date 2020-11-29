@@ -62,13 +62,17 @@ class Opas:
 
     chrome_path = '/usr/bin/chromium-browser'
     chromedriver_path = '/usr/lib/chromium/chromedriver'
+    chromedriver_path = 'C:\\bin\\chromedriver.exe'
+
     options = Options()
+    # for linux
     # options.binary_location = '/usr/bin/chromium-browser'
+    # for windows
+    options.binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
-    options.add_argument('--window-size=1200x600')
-    # options.add_argument("user-data-dir=/Users/<ユーザー名>/Library/Application Support/Google/Chrome")
+    # options.add_argument('--window-size=1200x600')
 
     cookie_name = 'JSESSIONID'
     cookie_value = ''
@@ -76,8 +80,7 @@ class Opas:
 
     def init_driver(self):
         """Seleniumドライバを初期化する"""
-        # driver = webdriver.Chrome(chromedriver_path, options=options)
-        self.__driver = webdriver.Chrome(options=self.options)
+        self.__driver = webdriver.Chrome(self.chromedriver_path, options=self.options)
         self.__driver.get(self.login_url)
 
         """
@@ -495,6 +498,7 @@ class Opas:
                             i += 1
 
         message = common.remove_redundunt(message)
+        message = common.to_japanese_day(message)
         if len(message) == 0:
             message = 'なし'
         return message
@@ -552,4 +556,4 @@ if __name__ == '__main__':
     # CRITICAL レベル以下のログを出力しない（＝実質なし）
     # logging.disable(logging.CRITICAL)
     # logging.info('debug: {}'.format())
-    api.run(debug=False, host='0.0.0.0', port=3001)
+    api.run(debug=False, host='0.0.0.0', port=3000)

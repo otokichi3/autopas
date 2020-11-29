@@ -2,11 +2,18 @@ version: '3'
 
 services:
   selenium:
-    container_name: selenium
+    container_name: opas
     build:
       context: .
       dockerfile: selenium.dockerfile
     tty: true
     volumes:
-        - ./app:/app
-    command: flask run --host 0.0.0.0
+        - ./:/app
+    ports:
+      - "3000"
+    environment:
+      - opas_id=${OPAS_ID}
+      - opas_password=${OPAS_PASSWORD}
+      - line_token=${LINE_TOKEN}
+      - captcha_key=${CAPTCHA_KEY}
+    command: python /app/main.py
