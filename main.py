@@ -242,12 +242,12 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_maru = 'maru' in m.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_maru
-                                a_maru = 'maru' in a.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_maru
-                                n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_maru
+                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
+                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
+                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
                                 day_index += 1
                     else:
                         mornings = tr.td.table.tbody.select(morning_row)
@@ -261,14 +261,15 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_maru = 'maru' in m.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_maru
-                                a_maru = 'maru' in a.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_maru
-                                e_maru = 'maru' in e.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_maru
-                                n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_maru
+
+                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
+                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
+                                e_status = self.get_vacant_status(e.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
+                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
                                 day_index += 1
                 else:
                     shisetu1_name = shisetu[0].text
@@ -302,14 +303,14 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_maru = 'maru' in m.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_maru
-                            a_maru = 'maru' in a.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_maru
-                            e_maru = 'maru' in e.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_maru
-                            n_maru = 'maru' in n.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_maru
+                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_status
+                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_status
+                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_status
+                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
                     day_index = 0
@@ -325,14 +326,14 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_maru = 'maru' in m.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_maru
-                            a_maru = 'maru' in a.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_maru
-                            e_maru = 'maru' in e.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_maru
-                            n_maru = 'maru' in n.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_maru
+                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_status
+                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_status
+                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_status
+                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
             else:
                 # 二週目(MM/08)以降は追加する
@@ -355,12 +356,12 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_maru = 'maru' in m.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_maru
-                                a_maru = 'maru' in a.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_maru
-                                n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_maru
+                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
+                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
+                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
                                 day_index += 1
                     else:
                         mornings = tr.td.table.tbody.select(morning_row)
@@ -374,14 +375,14 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_maru = 'maru' in m.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_maru
-                                a_maru = 'maru' in a.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_maru
-                                e_maru = 'maru' in e.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_maru
-                                n_maru = 'maru' in n.find("img").get("src")
-                                gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_maru
+                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
+                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
+                                e_status = self.get_vacant_status(e.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
+                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
                                 day_index += 1
                 else:
                     shisetu1_name = shisetu[0].text
@@ -399,14 +400,14 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_maru = 'maru' in m.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_maru
-                            a_maru = 'maru' in a.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_maru
-                            e_maru = 'maru' in e.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_maru
-                            n_maru = 'maru' in n.find("img").get("src")
-                            gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_maru
+                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_status
+                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_status
+                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_status
+                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
                     day_index = 0
@@ -422,14 +423,14 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_maru = 'maru' in m.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_maru
-                            a_maru = 'maru' in a.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_maru
-                            e_maru = 'maru' in e.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_maru
-                            n_maru = 'maru' in n.find("img").get("src")
-                            gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_maru
+                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_status
+                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_status
+                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_status
+                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
         # jsonに吐き出してデバッグする処理
@@ -462,24 +463,41 @@ class Opas:
             for court_name, timeframe in court.items():
                 i = 0
                 for timeframe_num, vacant_status in timeframe.items():
-                    if int(timeframe_num) in [TIME_AFTERNOON2, TIME_EVENING, TIME_NIGHT1, TIME_NIGHT2]:
+                    timeframe_num = int(timeframe_num)
+                    # debugのため時間帯が午後２、夕方、夜１、夜２のものだけ表示
+                    if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING, TIME_NIGHT1, TIME_NIGHT2]:
                         if len(vacant_status) > 0 and any(vacant_status.values()):
-                            # debugのため時間帯が夜のものだけ表示
+                            str_to_append = ''
                             if i == 0:
-                                message += '\n'
-                                message += '['+gym_name + ' ' + court_name + ']'
-                                message += '\n'
-                            message += timeframe_list[int(timeframe_num)]
-                            message += '\n'
+                                str_to_append += '\n'
+                                str_to_append += '['+gym_name + ' ' + court_name + ']'
+                                str_to_append += '\n'
+                            str_to_append += timeframe_list[int(timeframe_num)]
+                            str_to_append += '\n'
                             for date, status in vacant_status.items():
                                 if status:
+                                    str_to_append += ' '
                                     date_dt = datetime.datetime.strptime(date, '%Y-%m-%d')
-                                    message += ' '
-                                    message += date_dt.strftime('%m-%d(%a)')
-                                    message += '\n'
+                                    if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING]:
+                                        if date_dt.strftime('%a') in ['土', '日']:
+                                            str_to_append += date_dt.strftime('%m-%d(%a)')
+                                            if status == 2:
+                                                str_to_append += '(予)'
+                                            str_to_append += '\n'
+                                        else:
+                                            str_to_append = ''
+                                    else:
+                                        str_to_append += date_dt.strftime('%m-%d(%a)')
+                                        if status == 2:
+                                            str_to_append += '(予)'
+                                        str_to_append += '\n'
+                            message += str_to_append
                             i += 1
 
-        return common.remove_redundunt(message)
+        message = common.remove_redundunt(message)
+        if len(message) == 0:
+            message = 'なし'
+        return message
 
     def send_line(self, message: str):
         """LINEを送る"""
