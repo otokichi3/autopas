@@ -1,13 +1,28 @@
 steps:
-# Build the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/opas-badminton-dev/opas', '.']
-# Push the container image to Container Registry
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/opas-badminton-dev/opas']
-# Deploy container image to Cloud Run
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: gcloud
-  args: ['run', 'deploy', 'opas-NAME', '--image', 'gcr.io/opas-badminton-dev/opas', '--region', 'us-central1', '--platform', 'managed']
+  # Build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/opas-badminton-dev/opas", "."]
+  # Push the container image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/opas-badminton-dev/opas"]
+  # Deploy container image to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "opas",
+        "--image",
+        "gcr.io/opas-badminton-dev/opas",
+        "--region",
+        "us-central1",
+        "--platform",
+        "managed",
+      ]
+    env:
+      - 'opas_id=27041850'
+      - 'opas_password=OPASyskt1829'
+      - 'line_token=hM4JwG7IXMwJlHtNc5sD3G9HRYRYyd5CsNujbpncq3W'
 images:
-- gcr.io/opas-badminton-dev/opas
+  - gcr.io/opas-badminton-dev/opas
