@@ -482,7 +482,7 @@ class Opas:
                                     str_to_append += ' '
                                     date_dt = datetime.datetime.strptime(date, '%Y-%m-%d')
                                     if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING]:
-                                        if date_dt.strftime('%a') in ['土', '日']:
+                                        if date_dt.strftime('%a') in ['土', '日'] or date_dt.strftime('%a') in ['Sat', 'Sun']:
                                             str_to_append += date_dt.strftime('%m-%d(%a)')
                                             if status == 2:
                                                 str_to_append += '(予)'
