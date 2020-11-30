@@ -7,8 +7,6 @@ RUN echo "http://dl-4.alpinelinux.org/alpine/v3.10/main" >> /etc/apk/repositorie
 # install chromedriver
 RUN apk update
 RUN apk add chromium chromium-chromedriver
-RUN apk add locales
-RUN echo "Japanese_Japan 932" > /etc/locale.gen
 
 # upgrade pip
 RUN pip install --upgrade pip

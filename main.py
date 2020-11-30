@@ -74,9 +74,9 @@ class Opas:
     options.add_argument('--no-sandbox')
     # options.add_argument('--window-size=1200x600')
 
-    cookie_name = 'JSESSIONID'
-    cookie_value = ''
-    cookie_domain = 'reserve.opas.jp'
+    # cookie_name = 'JSESSIONID'
+    # cookie_value = ''
+    # cookie_domain = 'reserve.opas.jp'
 
     def init_driver(self):
         """Seleniumドライバを初期化する"""
@@ -146,7 +146,7 @@ class Opas:
         x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
         x_category_select = "//div[@id='mmaincolumn']/div[@class='tablebox']"
         today = datetime.date.today()
-        first_week = today + relativedelta(months=2)
+        first_week = today + relativedelta(months=1)
         first_week = first_week.replace(day=1)
         self.year = first_week.year
         self.month = first_week.month
@@ -161,8 +161,8 @@ class Opas:
 
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
-        with open('./output.html', 'w') as f:
-            f.write(joined)
+        # with open('./output.html', 'w') as f:
+        #     f.write(joined)
 
         self.__driver.quit()
 
@@ -190,6 +190,7 @@ class Opas:
         evening2_row = 'tr:nth-of-type(12) > td'
         night2_row = 'tr:nth-of-type(13) > td'
 
+        # TODO class に置き換える
         gym_dict = {}
         """
         [ジム: [コート: [時間帯: [[日時: 空き状態]]]]
@@ -437,9 +438,9 @@ class Opas:
                             day_index += 1
 
         # jsonに吐き出してデバッグする処理
-        d = json.dumps(gym_dict,ensure_ascii=False, indent=4)
-        with open('./output.json', 'w') as f:
-            f.write(d)
+        # d = json.dumps(gym_dict,ensure_ascii=False, indent=4)
+        # with open('./output.json', 'w') as f:
+        #     f.write(d)
 
         return gym_dict
 
@@ -461,13 +462,19 @@ class Opas:
     def create_message_from_list(self, gym_dict) -> str:
         """空きリストからLINEメッセージを作成する"""
         message = ''
+        str_to_append = ''
         for gym_name, court in gym_dict.items():
             gym_name = gym_name.replace(' ', '')
             for court_name, timeframe in court.items():
                 i = 0
                 for timeframe_num, vacant_status in timeframe.items():
+                    if len(str_to_append) == 0:
+                        i = 0
                     timeframe_num = int(timeframe_num)
                     # debugのため時間帯が午後２、夕方、夜１、夜２のものだけ表示
+                    # TODO 複数時間帯に空きがあり、かつ一つ目の時間帯の空きに土日がない場合、文字列がクリアされる
+                    # ゆえに、ジム名とコート名がなくなる。
+                    # 暫定対処として追加文字列が空ならインデックスを０にする
                     if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING, TIME_NIGHT1, TIME_NIGHT2]:
                         if len(vacant_status) > 0 and any(vacant_status.values()):
                             str_to_append = ''

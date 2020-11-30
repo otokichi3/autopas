@@ -5,7 +5,7 @@ services:
     container_name: opas
     build:
       context: .
-      dockerfile: selenium.dockerfile
+      dockerfile: Dockerfile
     tty: true
     volumes:
         - ./:/app
