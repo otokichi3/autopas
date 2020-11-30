@@ -28,7 +28,7 @@ locale.setlocale(locale.LC_TIME, 'Japanese_Japan.932')
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
 LINE_TOKEN = os.environ['line_token']
-CAPTCHA_KEY = os.environ['captcha_key']
+# CAPTCHA_KEY = os.environ['captcha_key']
 GYM_COUNT = 28
 COURT_COUNT = 37
 
@@ -62,13 +62,13 @@ class Opas:
 
     chrome_path = '/usr/bin/chromium-browser'
     chromedriver_path = '/usr/lib/chromium/chromedriver'
-    chromedriver_path = 'C:\\bin\\chromedriver.exe'
+    # chromedriver_path = 'C:\\bin\\chromedriver.exe'
 
     options = Options()
     # for linux
-    # options.binary_location = '/usr/bin/chromium-browser'
+    options.binary_location = '/usr/bin/chromium-browser'
     # for windows
-    options.binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+    # options.binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
@@ -563,4 +563,4 @@ if __name__ == '__main__':
     # CRITICAL レベル以下のログを出力しない（＝実質なし）
     # logging.disable(logging.CRITICAL)
     # logging.info('debug: {}'.format())
-    api.run(debug=False, host='0.0.0.0', port=3000)
+    api.run(debug=False, host='0.0.0.0', port=8080)
