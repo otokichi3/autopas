@@ -530,17 +530,17 @@ def get_vacant(debug=False):
     if debug == 1:
         """空き取得をデバッグする"""
         """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-        opas = Opas()
+        # opas = Opas()
         # path = './output.html'
         # with open(path) as f:
         #     html = f.read()
         # vacant_list = opas.get_vacant_list(html)
-        with open('./output.json') as f:
-            gym_json = f.read()
-        vacant_list = json.loads(gym_json)
-        message = opas.create_message_from_list(vacant_list)
+        # with open('./output.json') as f:
+        #     gym_json = f.read()
+        # vacant_list = json.loads(gym_json)
+        # message = opas.create_message_from_list(vacant_list)
 
-        return message
+        # return message
     else:
         opas = Opas()
         opas.init_driver()
@@ -554,13 +554,15 @@ def get_vacant(debug=False):
             'status': 'OK',
             'data': message
         })
+    
+    return ''
 
 
 if __name__ == '__main__':
     # (low)DEBUG, INFO, WARNING, ERROR, CRITICAL(high)
-    logging.basicConfig(level=logging.INFO,
-                        format='%(levelname)s: %(message)s')
+    # logging.basicConfig(level=logging.INFO,
+    #                     format='%(levelname)s: %(message)s')
     # CRITICAL レベル以下のログを出力しない（＝実質なし）
     # logging.disable(logging.CRITICAL)
     # logging.info('debug: {}'.format())
-    api.run(debug=False, host='0.0.0.0', port=8080)
+    api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))

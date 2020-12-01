@@ -11,10 +11,12 @@ RUN apk add chromium chromium-chromedriver
 # upgrade pip
 RUN pip install --upgrade pip
 
-# install selenium
-RUN pip install selenium
-RUN pip install flask
-RUN pip install beautifulsoup4
-RUN pip install python-dateutil
-RUN pip install flask_cors
-RUN pip install requests
+# Copy requirements.txt to the docker image and install packages
+COPY requirements.txt /
+RUN pip install -r requirements.txt
+
+# Set the WORKDIR to be the folder
+COPY . /app
+
+WORKDIR /app
+CMD exec gunicorn --bind :$PORT main:app --workers 1 --threads 1
