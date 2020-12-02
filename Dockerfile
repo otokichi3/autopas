@@ -15,8 +15,14 @@ RUN pip install --upgrade pip
 COPY requirements.txt /
 RUN pip install -r requirements.txt
 
-# Set the WORKDIR to be the folder
+# Copy all files
 COPY . /app
 
+# Set env
+ENV opas_id 27041850
+ENV opas_password OPASyskt1829
+ENV line_token hM4JwG7IXMwJlHtNc5sD3G9HRYRYyd5CsNujbpncq3W
+
+# Set the WORKDIR to be the folder
 WORKDIR /app
-CMD exec gunicorn --bind :$PORT main:app --workers 1 --threads 1
+CMD ["python", "main.py"]

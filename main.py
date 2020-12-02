@@ -246,11 +246,11 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                                 gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                                 gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
-                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                                 gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
                                 day_index += 1
                     else:
@@ -266,13 +266,13 @@ class Opas:
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
 
-                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                                 gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                                 gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
-                                e_status = self.get_vacant_status(e.find("img").get("src"))
+                                e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                                 gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
-                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                                 gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
                                 day_index += 1
                 else:
@@ -307,13 +307,13 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                             gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_status
-                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                             gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_status
-                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                             gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_status
-                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                             gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
@@ -330,13 +330,13 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                             gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_status
-                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                             gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_status
-                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                             gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_status
-                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                             gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
             else:
@@ -360,11 +360,11 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                                 gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                                 gym_dict[gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
-                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                                 gym_dict[gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
                                 day_index += 1
                     else:
@@ -379,13 +379,13 @@ class Opas:
                                 target_date = base_date + \
                                     relativedelta(days=day_index)
                                 date_str = target_date.strftime('%Y-%m-%d')
-                                m_status = self.get_vacant_status(m.find("img").get("src"))
+                                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                                 gym_dict[gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                                a_status = self.get_vacant_status(a.find("img").get("src"))
+                                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                                 gym_dict[gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
-                                e_status = self.get_vacant_status(e.find("img").get("src"))
+                                e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                                 gym_dict[gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
-                                n_status = self.get_vacant_status(n.find("img").get("src"))
+                                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                                 gym_dict[gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
                                 day_index += 1
                 else:
@@ -404,13 +404,13 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                             gym_dict[gym_name][shisetu1_name][TIME_MORNING][date_str] = m_status
-                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                             gym_dict[gym_name][shisetu1_name][TIME_AFTERNOON1][date_str] = a_status
-                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                             gym_dict[gym_name][shisetu1_name][TIME_EVENING][date_str] = e_status
-                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                             gym_dict[gym_name][shisetu1_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
@@ -427,13 +427,13 @@ class Opas:
                             target_date = base_date + \
                                 relativedelta(days=day_index)
                             date_str = target_date.strftime('%Y-%m-%d')
-                            m_status = self.get_vacant_status(m.find("img").get("src"))
+                            m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
                             gym_dict[gym_name][shisetu2_name][TIME_MORNING][date_str] = m_status
-                            a_status = self.get_vacant_status(a.find("img").get("src"))
+                            a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
                             gym_dict[gym_name][shisetu2_name][TIME_AFTERNOON1][date_str] = a_status
-                            e_status = self.get_vacant_status(e.find("img").get("src"))
+                            e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
                             gym_dict[gym_name][shisetu2_name][TIME_EVENING][date_str] = e_status
-                            n_status = self.get_vacant_status(n.find("img").get("src"))
+                            n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
                             gym_dict[gym_name][shisetu2_name][TIME_NIGHT2][date_str] = n_status
                             day_index += 1
 
@@ -450,7 +450,7 @@ class Opas:
         STATUS_TO_BE_VACANT = 2
         if 'maru.png' in img_src:
             return STATUS_VACANT
-        elif 'yo.png' in img_src:
+        elif 'yo.png' in img_src or '予' in img_src:
             return STATUS_TO_BE_VACANT
         else:
             return STATUS_RESERVED
