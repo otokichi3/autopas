@@ -17,6 +17,8 @@ steps:
         "gcr.io/opas-badminton-dev/opas",
         "--memory",
         "512M",
+        "--concurrency",
+        "1",
         "--region",
         "us-central1",
         "--platform",

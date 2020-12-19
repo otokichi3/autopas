@@ -20,7 +20,6 @@ from bs4 import BeautifulSoup
 
 from line_notify_bot import LINENotifyBot
 from gym import Court, Gym
-import decorator
 import common
 
 locale.setlocale(locale.LC_TIME, 'Japanese_Japan.932')
