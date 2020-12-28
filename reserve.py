@@ -9,7 +9,7 @@ def reserve():
 
     # 日付選択
     # TODO 希望の年月日を選択する
-    opas.select_date(2020, 12, 9)
+    opas.select_date(2020, 1, 17)
     x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
     driver.find_element_by_xpath(x_btn_display).click()
 
