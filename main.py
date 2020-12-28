@@ -3,7 +3,6 @@ import os
 import io
 import csv
 import json
-import logging
 import base64
 import datetime
 import locale
@@ -25,6 +24,7 @@ from bs4 import BeautifulSoup
 from line_notify_bot import LINENotifyBot
 from gym import Court, Gym
 import common
+import xpath
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -471,6 +471,7 @@ def debug_get_vacant():
     with open('./output.html') as f:
         html = f.read()
     opas.set_date()
+    api.logger.info(xpath.xpath['a'])
     opas.get_vacant_list(html)
     message = opas.create_message_from_list()
     opas.send_line(message)
@@ -558,7 +559,4 @@ def reserve():
     return ''
 
 if __name__ == '__main__':
-    # logging.basicConfig(level=logging.INFO,
-    #                     format='%(levelname)s: %(message)s')
-    # logging.disable(logging.CRITICAL)
     api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
