@@ -4,3 +4,5 @@ beautifulsoup4
 python-dateutil
 flask_cors
 requests
+memory_profiler
+python-dotenv

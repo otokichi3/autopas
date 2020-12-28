@@ -1,23 +1,15 @@
-# コート
+import dataclasses
+from typing import List
+
+# TODO これらのクラスを opas.py で使用する
+@dataclasses.dataclass
 class Court:
-    timeframes = []
+    """コート"""
+    name: str = 'undefined'
+    vacant_table: list[list[bool]] = dataclasses.field(default_factory=list)
 
-    def __init__(self, name: str):
-        self.name = name
-
-    def set_html(self, html: str):
-        self.html = html
-
-    def add_timeframe(self, timeframe):
-        self.timeframes.append(timeframe)
-
-
-# ジム
+@dataclasses.dataclass
 class Gym:
-    courts = []
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def add_court(self, court: Court):
-        self.courts.append(court)
+    """体育館"""
+    name: str = 'undefined'
+    courts: list[Court] = dataclasses.field(default_factory=list)
