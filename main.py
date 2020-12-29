@@ -24,7 +24,7 @@ from bs4 import BeautifulSoup
 from line_notify_bot import LINENotifyBot
 from gym import Court, Gym
 import common
-import xpath
+from xpath import xpath
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -136,42 +136,30 @@ class Opas:
         """OPASにログインする"""
         self.__driver.find_element_by_name("txtRiyoshaCode").send_keys(id)
         self.__driver.find_element_by_name("txtPassWord").send_keys(password)
-        x_login_btn = "//p[@class='loginbtn']/a"
-        self.__driver.find_element_by_xpath(x_login_btn).click()
+        self.__driver.find_element_by_xpath(xpath['login']).click()
 
     # ログインしている場合はログイン空き照会、そうでない場合はトップの空き照会
     def inquire(self, is_login: bool):
         if is_login:
-            x_inquire_btn_login = "//ul[@class='menu_buttons'][1]/li[1]/a[@class='bgpng']"
-            self.__driver.find_element_by_xpath(x_inquire_btn_login).click()
+            self.__driver.find_element_by_xpath(xpath['aki_syoukai_yoyaku_btn']).click()
         else:
-            x_inquire_btn = "//p[@class='menu_button'][1]/a/img"
-            self.__driver.find_element_by_xpath(x_inquire_btn).click()
+            self.__driver.find_element_by_xpath(xpath['aki_jyoukyou_syoukai_btn']).click()
 
     def select_category(self, is_login: bool):
         """カテゴリーを選択する"""
 
         # 空き照会・予約
         self.inquire(is_login)
-
-        # 1. 利用目的から絞り込む
-        # 2. 利用目的選択（大分類選択）：バドミントン
-        # 3. 利用目的選択（小分類選択）：バドミントン
-        xpaths = [
-            "//div[@id='mmaincolumn']/div/table/tbody/tr[2]",
-            "//div[@id='mmaincolumn']/div/table/tbody/tr[4]",
-            "//div[@id='mmaincolumn']/div/table/tbody/tr[2]",
-        ]
-        for xpath in xpaths:
-            self.__driver.find_element_by_xpath(xpath).click()
+        self.__driver.find_element_by_xpath(xpath['shiborikomu']).click()
+        self.__driver.find_element_by_xpath(xpath['daibunrui_badminton']).click()
+        self.__driver.find_element_by_xpath(xpath['shobunrui_badminton']).click()
 
     def select_gym(self, is_all: bool = False, rec_nums: List[str] = []):
         """ジムを選択する"""
         if is_all:
             for i in range(COURT_COUNT):
                 self.__driver.find_element_by_id("i_record{}".format(i)).click()
-            x_next = "//div[@id='fmaincolumn']/div[@id='pagerbox']/a[2]"
-            self.__driver.find_element_by_xpath(x_next).click()
+            self.__driver.find_element_by_xpath(xpath['next']).click()
             return
 
         # TODO 体育館を複数選択する
@@ -191,15 +179,13 @@ class Opas:
         """一ヶ月分をまとめたHTMLを取得する"""
         # 翌月の週ごとに HTML を取得する
         weekly_htmls = []
-        x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
-        x_category_select = "//div[@id='mmaincolumn']/div[@class='tablebox']"
         # 日数が短い月は4週、とか。
         month_count = 5 if self.month != 2 else 4
         for i in range(month_count):
             target = self.first_week + relativedelta(weeks=+i)
             self.select_date(target.year, target.month, target.day)
-            self.__driver.find_element_by_xpath(x_btn_display).click()
-            inner_html = self.__driver.find_element_by_xpath(x_category_select).get_attribute('innerHTML')
+            self.__driver.find_element_by_xpath(xpath['display']).click()
+            inner_html = self.__driver.find_element_by_xpath(xpath['tablebox']).get_attribute('innerHTML')
             weekly_htmls.append(inner_html)
 
         # 5週分の HTML を結合して返す
@@ -416,9 +402,9 @@ class Opas:
 
     def send_line(self, message: str):
         """LINEを送る"""
-        # api.logger.info('message: %s', message)
-        bot = LINENotifyBot(access_token=LINE_TOKEN)
-        bot.send(message=message)
+        api.logger.info('message: %s', message)
+        # bot = LINENotifyBot(access_token=LINE_TOKEN)
+        # bot.send(message=message)
 
     # TODO なんかいけてない
     def get_vacant(self, debug: int):
@@ -471,7 +457,7 @@ def debug_get_vacant():
     with open('./output.html') as f:
         html = f.read()
     opas.set_date()
-    api.logger.info(xpath.xpath['a'])
+    api.logger.info(xpath['a'])
     opas.get_vacant_list(html)
     message = opas.create_message_from_list()
     opas.send_line(message)
@@ -492,19 +478,16 @@ def reserve():
     # 体育館・コートを選択
     driver.find_element_by_id("i_record16").click() # なにわ第一
     # driver.find_element_by_id("i_record22").click() # 東成第一
-    x_next = "//div[@id='fmaincolumn']/div[@id='pagerbox']/a[2]"
-    driver.find_element_by_xpath(x_next).click()
+    driver.find_element_by_xpath(xpath['next']).click()
 
     # 日付選択
     # TODO 希望の年月日を選択する
     opas.select_date(2021, 1, 17) # 浪速1/17 12-15
     # opas.select_date(2021, 2, 9) # 東成2/9
-    x_btn_display = "//table[@class='none_style']/tbody/tr/td[3]"
-    driver.find_element_by_xpath(x_btn_display).click()
+    driver.find_element_by_xpath(xpath['display']).click()
 
     # ポップアップ OK
-    x_popup_ok = "//input[@id='popup_ok']"
-    driver.find_element_by_xpath(x_popup_ok).click()
+    driver.find_element_by_xpath(xpath['popup_ok']).click()
 
     # 予約対象区分選択（日付選択後）
     # テキトーに最初のやつ選択
@@ -512,20 +495,19 @@ def reserve():
     driver.find_element_by_id("i_record0").click()
 
     # 次に進む
-    driver.find_element_by_xpath("//div[@id='pagerbox']/a[2]").click()
+    driver.find_element_by_xpath(xpath['next']).click()
 
     # 申込内容入力
     driver.find_element_by_id("numberOfRiyosha").send_keys('22')
 
     # 次に進む
-    driver.find_element_by_xpath("//div[@id='pagerbox']/a[2]").click()
+    driver.find_element_by_xpath(xpath['next']).click()
 
     # 利用規約
     driver.find_element_by_id("img_chkRiyoKiyaku").click()
 
     # kaptcha 取得
-    x_kaptcha_img = "//div[@class='sub_box']/div[2]/p/img[1]"
-    kaptcha = driver.find_element_by_xpath(x_kaptcha_img).screenshot_as_png
+    kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
     with open('./kaptcha.png', 'wb') as f:
         f.write(kaptcha)
 
@@ -551,10 +533,9 @@ def reserve():
         kaptcha_txt = res.text[3:]
         driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
         # 確定
-        x_fix_btn = "//div[@class='centered-paranemic-ul-div']/ul/li/a"
-        driver.find_element_by_xpath(x_fix_btn).click()
+        driver.find_element_by_xpath(xpath['fix']).click()
         # OK
-        driver.find_element_by_xpath(x_popup_ok).click()
+        driver.find_element_by_xpath(xpath['popup_ok']).click()
         time.sleep(5)  # 余韻に浸る
     return ''
 
