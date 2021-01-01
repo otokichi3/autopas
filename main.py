@@ -96,7 +96,7 @@ class Opas:
     timeframes = []
     gyms = {}
     gym_name = ''
-    day_index = 0
+    base_date = None
 
     # TODO 定数を外だしする
     login_url = 'https://reserve.opas.jp/osakashi/menu/Login.cgi'
@@ -206,52 +206,50 @@ class Opas:
         Select(month).select_by_value("{:02d}".format(m))
         Select(day).select_by_value("{:02d}".format(d))
 
-    def set_status(self, tr, base_date, shisetu_name):
+    # TODO どうにか共通化。重なる部分が多い。
+    def set_status(self, tr, shisetu_name):
         # コート名と日付部分とページ移動部分を除く(-3)
         timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
+        day_index = 0
         mornings = tr.td.table.tbody.select(morning_row)
         afternoons = tr.td.table.tbody.select(afternoon_row)
+
         if timeframe_count == 3:
+            evenings = []
             nights = tr.td.table.tbody.select(evening_row)
-            for m, a, n in zip(mornings, afternoons, nights):
-                if "facmdstime" in m.get('class'):
-                    continue
-                else:
-                    target_date = base_date + relativedelta(days=self.day_index)
-                    date_str = target_date.strftime(DATE_FORMAT)
-                    m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
-                    a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
-                    n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
-                    self.gyms[self.gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
-                    self.day_index += 1
         else:
             evenings = tr.td.table.tbody.select(evening_row)
             nights = tr.td.table.tbody.select(night_row)
-            for m, a, e, n in zip(mornings, afternoons, evenings, nights):
-                if "facmdstime" in m.get('class'):
-                    continue
-                else:
-                    target_date = base_date + relativedelta(days=self.day_index)
-                    date_str = target_date.strftime(DATE_FORMAT)
-                    m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
-                    a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
+        
+        for m, a, e, n in zip_longest(mornings, afternoons, evenings, nights):
+            if "facmdstime" in m.get('class'):
+                continue
+            else:
+                target_date = self.base_date + relativedelta(days=day_index)
+                date_str = target_date.strftime(DATE_FORMAT)
+                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
+                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
+                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
+                if e is not None:
                     e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
-                    n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
+                if timeframe_count == 3:
+                    self.gyms[self.gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
+                    self.gyms[self.gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
+                    self.gyms[self.gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
+                else:
                     self.gyms[self.gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
                     self.gyms[self.gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
                     self.gyms[self.gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
                     self.gyms[self.gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
-                    self.day_index += 1
+                day_index += 1
+                            
+        day_index = 0
 
-        self.day_index = 0
-
-    def set_weekly_vacant(self, tr, shisetu, base_date):
+    def set_weekly_vacant(self, tr, shisetu):
         if self.gym_name in self.gyms:
             # すでに施設名が存在する場合(2週目以降)
             for s in shisetu:
-                self.set_status(tr, base_date, s.text)
+                self.set_status(tr, s.text)
         else:
             # 施設名が存在しない場合(1週目)
             self.gyms[self.gym_name] = {}
@@ -264,23 +262,23 @@ class Opas:
                     TIME_NIGHT1: {},
                     TIME_NIGHT2: {}
                 }
-                self.set_status(tr, base_date, s.text)
+                self.set_status(tr, s.text)
 
     def get_vacant_list(self, html):
         """空きリストを取得する"""
         soup = BeautifulSoup(html, "html.parser")
-        trs = soup.select('table.facilitiesbox > tbody > tr')
+        tr_list = soup.select('table.facilitiesbox > tbody > tr')
 
         # TODO class に置き換える
         self.gyms = {}
-        for i, tr in enumerate(trs):  # 140
+        for i, tr in enumerate(tr_list):  # 140
             shisetu = tr.select(".shisetu_name")
             if len(shisetu) == 0:
                 # 関係のない行はスキップ
                 continue
-            base_date = datetime.date(self.year, self.month, self.day) + relativedelta(weeks=int(i/GYM_COUNT))
+            self.base_date = datetime.date(self.year, self.month, self.day) + relativedelta(weeks=int(i/GYM_COUNT))
             self.gym_name = tr.select_one(".kaikan_title").text.replace(' ', '')
-            self.set_weekly_vacant(tr, shisetu, base_date)
+            self.set_weekly_vacant(tr, shisetu)
 
         # jsonに吐き出してデバッグ
         d = json.dumps(self.gyms, ensure_ascii=False, indent=4)
@@ -360,43 +358,28 @@ class Opas:
         # bot.send(message=message)
 
     # TODO なんかいけてない
-    def get_vacant(self, debug: int):
+    def get_vacant(self):
         """空きを取得する"""
         # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
-        if debug == 1:
-            """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-            # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
-            with open(OUTPUT_HTML) as f:
-                html = f.read()
-            self.set_date()
-            self.get_vacant_list(html)
-            message = self.create_message_from_list()
-            self.send_line(message)
-            return jsonify({
-                'status': 'OK',
-                'data': message
-            })
-        else:
-            self.init_driver()
-            self.select_category(is_login=False)
-            self.select_gym(is_all=True)
-            self.set_date()
-            html = self.get_month_html()
-            self.get_vacant_list(html)
-            message = self.create_message_from_list()
-            self.send_line(message)
-            return jsonify({
-                'status': 'OK',
-                'data': message
-            })
+        self.init_driver()
+        self.select_category(is_login=False)
+        self.select_gym(is_all=True)
+        self.set_date()
+        html = self.get_month_html()
+        self.get_vacant_list(html)
+        message = self.create_message_from_list()
+        self.send_line(message)
+        return jsonify({
+            'status': 'OK',
+            'data': message
+        })
 
 # TODO メモリ使用量を調べる
 @profile
 @api.route('/vacants', methods=['GET'])
-def get_vacant(debug=False):
+def get_vacant():
     opas = Opas()
-    debug = int(request.args.get('debug', 0))
-    res = opas.get_vacant(debug)
+    res = opas.get_vacant()
     # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
     return res
 
