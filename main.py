@@ -62,6 +62,7 @@ timeframe_list = {
 
 DATE_FORMAT = '%Y-%m-%d'
 DISPLAY_DATE_FORMAT = '%m-%d(%a)'
+OUTPUT_HTML = './output.html'
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -114,8 +115,7 @@ class Opas:
 
     def init_driver(self):
         """Seleniumドライバを初期化する"""
-        self.__driver = webdriver.Chrome(
-            chromedriver_path, options=self.options)
+        self.__driver = webdriver.Chrome(chromedriver_path, options=self.options)
         self.__driver.get(self.login_url)
 
         """
@@ -147,7 +147,6 @@ class Opas:
 
     def select_category(self, is_login: bool):
         """カテゴリーを選択する"""
-
         # 空き照会・予約
         self.inquire(is_login)
         self.__driver.find_element_by_xpath(xpath['shiborikomu']).click()
@@ -190,7 +189,8 @@ class Opas:
 
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
-        with open('./output.html', 'w') as f:
+        # デバッグ用
+        with open(OUTPUT_HTML, 'w') as f:
             f.write(joined)
 
         self.__driver.quit()
@@ -212,7 +212,6 @@ class Opas:
         mornings = tr.td.table.tbody.select(morning_row)
         afternoons = tr.td.table.tbody.select(afternoon_row)
         if timeframe_count == 3:
-            evenings = []
             nights = tr.td.table.tbody.select(evening_row)
             for m, a, n in zip(mornings, afternoons, nights):
                 if "facmdstime" in m.get('class'):
@@ -247,54 +246,25 @@ class Opas:
                     self.day_index += 1
 
         self.day_index = 0
-        
-    def set_first_week(self, tr, shisetu, base_date, week_index):
-        # 最初(MM/01)は辞書を作成する
-        if len(shisetu) == 1:
-            shisetu_name = shisetu[0].text
-            self.gyms[self.gym_name] = {}
-            self.gyms[self.gym_name][shisetu_name] = {
-                TIME_MORNING: {},
-                TIME_AFTERNOON1: {},
-                TIME_AFTERNOON2: {},
-                TIME_EVENING: {},
-                TIME_NIGHT1: {},
-                TIME_NIGHT2: {}
-            }
-            self.set_status(tr, base_date, shisetu_name)
-        else:
-            shisetu1_name = shisetu[0].text
-            shisetu2_name = shisetu[1].text
-            self.gyms[self.gym_name] = {}
-            self.gyms[self.gym_name][shisetu1_name] = {
-                TIME_MORNING: {},
-                TIME_AFTERNOON1: {},
-                TIME_AFTERNOON2: {},
-                TIME_EVENING: {},
-                TIME_NIGHT1: {},
-                TIME_NIGHT2: {}
-            }
-            self.gyms[self.gym_name][shisetu2_name] = {
-                TIME_MORNING: {},
-                TIME_AFTERNOON1: {},
-                TIME_AFTERNOON2: {},
-                TIME_EVENING: {},
-                TIME_NIGHT1: {},
-                TIME_NIGHT2: {}
-            }
 
-            self.set_status(tr, base_date, shisetu1_name)
-            self.set_status(tr, base_date, shisetu2_name)
-
-    def set_after_first_week(self, tr, shisetu, base_date, week_index):
-        if len(shisetu) == 1:
-            # TODO 時間帯が3つしかない体育館は上から3つのみのため、
-            #      その前提でコードを書いて良いかもしれない。
-            #      →switch 文を使い体育館ごとに処理を分ける。
-            self.set_status(tr, base_date, shisetu[0].text)
+    def set_weekly_vacant(self, tr, shisetu, base_date):
+        if self.gym_name in self.gyms:
+            # すでに施設名が存在する場合(2週目以降)
+            for s in shisetu:
+                self.set_status(tr, base_date, s.text)
         else:
-            self.set_status(tr, base_date, shisetu[0].text)
-            self.set_status(tr, base_date, shisetu[1].text)
+            # 施設名が存在しない場合(1週目)
+            self.gyms[self.gym_name] = {}
+            for s in shisetu:
+                self.gyms[self.gym_name][s.text] = {
+                    TIME_MORNING: {},
+                    TIME_AFTERNOON1: {},
+                    TIME_AFTERNOON2: {},
+                    TIME_EVENING: {},
+                    TIME_NIGHT1: {},
+                    TIME_NIGHT2: {}
+                }
+                self.set_status(tr, base_date, s.text)
 
     def get_vacant_list(self, html):
         """空きリストを取得する"""
@@ -302,34 +272,17 @@ class Opas:
         trs = soup.select('table.facilitiesbox > tbody > tr')
 
         # TODO class に置き換える
-        # TODO 大量の同じコードを一括化する
         self.gyms = {}
-        """
-        [ジム: [コート: [時間帯: [[日時: 空き状態]]]]
-        [string: [string: [int: [[string: bool]]]]
-        four-nested dictionary -> to be classed?
-        """
-        """
-        TODO
-        - Cognitive Complexity
-            https://qiita.com/suzuki_sh/items/824c36b8d53dd2f1efcb
-        - Database(Cloud Firestore? Cloud SQL は高い。トランザクションいらんし)
-        - Memory footprint
-            https://tech.curama.jp/entry/2018/06/22/120000
-        """
         for i, tr in enumerate(trs):  # 140
-            base_date = datetime.date(self.year, self.month, self.day)
-            week_index = int(i/GYM_COUNT)
-            base_date += relativedelta(weeks=week_index)
+            shisetu = tr.select(".shisetu_name")
+            if len(shisetu) == 0:
+                # 関係のない行はスキップ
+                continue
+            base_date = datetime.date(self.year, self.month, self.day) + relativedelta(weeks=int(i/GYM_COUNT))
             self.gym_name = tr.select_one(".kaikan_title").text.replace(' ', '')
-            shisetu = tr.select(".shisetu_name")  # 配列
-            if i < GYM_COUNT:
-                self.set_first_week(tr, shisetu, base_date, week_index)
-            else:
-                # 二週目(MM/08)以降は追加する
-                self.set_after_first_week(tr, shisetu, base_date, week_index)
+            self.set_weekly_vacant(tr, shisetu, base_date)
 
-        # jsonに吐き出してデバッグする処理
+        # jsonに吐き出してデバッグ
         d = json.dumps(self.gyms, ensure_ascii=False, indent=4)
         with open('./output.json', 'w') as f:
             f.write(d)
@@ -337,7 +290,7 @@ class Opas:
     def get_vacant_status(self, img_src) -> int:
         if 'maru.png' in img_src:
             return STATUS_VACANT
-        elif 'yo.png' in img_src or '予' in img_src:
+        elif ('yo.png' in img_src) or ('予' in img_src):
             return STATUS_TO_BE_VACANT
         else:
             return STATUS_RESERVED
@@ -413,7 +366,7 @@ class Opas:
         if debug == 1:
             """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
             # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
-            with open('./output.html') as f:
+            with open(OUTPUT_HTML) as f:
                 html = f.read()
             self.set_date()
             self.get_vacant_list(html)
@@ -454,10 +407,9 @@ def debug_get_vacant():
     opas = Opas()
     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
     # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
-    with open('./output.html') as f:
+    with open(OUTPUT_HTML) as f:
         html = f.read()
     opas.set_date()
-    api.logger.info(xpath['a'])
     opas.get_vacant_list(html)
     message = opas.create_message_from_list()
     opas.send_line(message)
