@@ -7,6 +7,7 @@ import base64
 import datetime
 import locale
 import time
+import dataclasses
 from dateutil.relativedelta import relativedelta
 from typing import List, Dict
 from itertools import zip_longest
@@ -22,7 +23,7 @@ from memory_profiler import profile
 from bs4 import BeautifulSoup
 
 from line_notify_bot import LINENotifyBot
-from gym import Court, Gym
+from gym import Shisetu, Gym
 import common
 from xpath import xpath
 
@@ -95,7 +96,10 @@ STATUS_TO_BE_VACANT = 2
 class Opas:
     timeframes = []
     gyms = {}
+    cgyms = []
+    cgym = None
     gym_name = ''
+    shisetu = None
     base_date = None
 
     # TODO 定数を外だしする
@@ -168,7 +172,7 @@ class Opas:
 
     def set_date(self):
         today = datetime.date.today()
-        self.first_week = today + relativedelta(months=1)
+        self.first_week = today + relativedelta(months=-1)
         self.first_week = self.first_week.replace(day=1)
         self.year = self.first_week.year
         self.month = self.first_week.month
@@ -245,6 +249,51 @@ class Opas:
                             
         day_index = 0
 
+    def set_status_for_class(self, tr, shisetu_name):
+        # コート名と日付部分とページ移動部分を除く(-3)
+        timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
+        day_index = 0
+        mornings = tr.td.table.tbody.select(morning_row)
+        afternoons = tr.td.table.tbody.select(afternoon_row)
+
+        # TODO FIXME 同じSCでも別の施設として扱われている
+        shisetu_name = Shisetu.shorten(shisetu_name)
+        if self.cgym.has(shisetu_name):
+            self.shisetu = self.cgym.get_shisetu(shisetu_name)
+        else:
+            self.shisetu = Shisetu(shisetu_name)
+
+        if timeframe_count == 3:
+            evenings = []
+            nights = tr.td.table.tbody.select(evening_row)
+        else:
+            evenings = tr.td.table.tbody.select(evening_row)
+            nights = tr.td.table.tbody.select(night_row)
+        
+        for m, a, e, n in zip_longest(mornings, afternoons, evenings, nights):
+            if "facmdstime" in m.get('class'):
+                continue
+            else:
+                target_date = self.base_date + relativedelta(days=day_index)
+                date_str = target_date.strftime(DATE_FORMAT)
+                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
+                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
+                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
+                if e is not None:
+                    e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
+                if timeframe_count == 3:
+                    self.shisetu.set_vacant(date_str, TIME_MORNING, m_status)
+                    self.shisetu.set_vacant(date_str, TIME_AFTERNOON2, a_status)
+                    self.shisetu.set_vacant(date_str, TIME_NIGHT1, n_status)
+                else:
+                    self.shisetu.set_vacant(date_str, TIME_MORNING, m_status)
+                    self.shisetu.set_vacant(date_str, TIME_AFTERNOON1, a_status)
+                    self.shisetu.set_vacant(date_str, TIME_EVENING, e_status)
+                    self.shisetu.set_vacant(date_str, TIME_NIGHT2, n_status)
+                day_index += 1
+                            
+        day_index = 0
+
     def set_weekly_vacant(self, tr, shisetu):
         if self.gym_name in self.gyms:
             # すでに施設名が存在する場合(2週目以降)
@@ -264,13 +313,27 @@ class Opas:
                 }
                 self.set_status(tr, s.text)
 
+        # class
+        for s in shisetu:
+            self.set_status_for_class(tr, s.text)
+            if not self.cgym.has(self.shisetu.name):
+                self.cgym.shisetu_list.append(self.shisetu)
+
+    def cgym_duplicated(self, cgym) -> bool:
+        for c in self.cgyms:
+            if c.name == cgym.name:
+                return True
+        return False
+        
     def get_vacant_list(self, html):
         """空きリストを取得する"""
         soup = BeautifulSoup(html, "html.parser")
         tr_list = soup.select('table.facilitiesbox > tbody > tr')
 
+        # 計測start(3.8s)
+        # start = time.time()
+
         # TODO class に置き換える
-        self.gyms = {}
         for i, tr in enumerate(tr_list):  # 140
             shisetu = tr.select(".shisetu_name")
             if len(shisetu) == 0:
@@ -278,10 +341,43 @@ class Opas:
                 continue
             self.base_date = datetime.date(self.year, self.month, self.day) + relativedelta(weeks=int(i/GYM_COUNT))
             self.gym_name = tr.select_one(".kaikan_title").text.replace(' ', '')
+
+            # class
+            existed = None
+            for cgym in self.cgyms:
+                if cgym.name == self.gym_name:
+                    existed = cgym
+                
+            if existed is not None:
+                cgym = existed
+            else:
+                name = Gym.shorten(self.gym_name)
+                cgym = Gym(name)
+
+            self.cgym = cgym
+
             self.set_weekly_vacant(tr, shisetu)
 
+            # class
+            if not self.cgym_duplicated(cgym):
+                self.cgyms.append(cgym)
+
+        res = ''
+        for cgym in self.cgyms:
+            res += cgym.to_msg()
+        api.logger.info('\n' + res)
+
+        # 計測end
+        # elapsed_time = time.time() - start
+        # api.logger.info("elapsed_time:{0}".format(elapsed_time) + "[sec]")
+
         # jsonに吐き出してデバッグ
-        d = json.dumps(self.gyms, ensure_ascii=False, indent=4)
+        # d = json.dumps(self.gyms, ensure_ascii=False, indent=4)
+        # jsonに吐き出してデバッグ(class)
+        output = {}
+        for cgym in self.cgyms:
+            output[cgym.name] = dataclasses.asdict(cgym)
+        d = json.dumps(output, ensure_ascii=False, indent=4)
         with open('./output.json', 'w') as f:
             f.write(d)
 
@@ -325,12 +421,10 @@ class Opas:
                             for date, status in vacant_status.items():
                                 if status:
                                     str_to_append += ' '
-                                    date_dt = datetime.datetime.strptime(
-                                        date, DATE_FORMAT)
+                                    date_dt = datetime.datetime.strptime(date, DATE_FORMAT)
                                     if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING]:
                                         if date_dt.strftime('%a') in ['土', '日'] or date_dt.strftime('%a') in ['Sat', 'Sun']:
-                                            str_to_append += date_dt.strftime(
-                                                DISPLAY_DATE_FORMAT)
+                                            str_to_append += date_dt.strftime(DISPLAY_DATE_FORMAT)
                                             if status == 2:
                                                 str_to_append += '(予)'
                                             str_to_append += '\n'
