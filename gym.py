@@ -71,6 +71,7 @@ class Shisetu:
             self.vacant_table[date][timeframe] = status
     
     def vacant_filter(self):
+        # TODO 土日でなく欲しい時間帯でもなければ status を 0 にしてしまう、とか
         # dayoff 土日だけ
         dayoff_vacant = dict(filter(lambda item: '土' in item[0] or '日' in item[0], self.vacant_table.items()))
         # dayoff-time 土日の12時以降
