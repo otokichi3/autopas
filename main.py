@@ -172,7 +172,7 @@ class Opas:
 
     def set_date(self):
         today = datetime.date.today()
-        self.first_week = today + relativedelta(months=-1)
+        self.first_week = today + relativedelta(months=1)
         self.first_week = self.first_week.replace(day=1)
         self.year = self.first_week.year
         self.month = self.first_week.month
@@ -253,22 +253,32 @@ class Opas:
         # コート名と日付部分とページ移動部分を除く(-3)
         timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
         day_index = 0
-        mornings = tr.td.table.tbody.select(morning_row)
-        afternoons = tr.td.table.tbody.select(afternoon_row)
 
-        # TODO FIXME 同じSCでも別の施設として扱われている
-        shisetu_name = Shisetu.shorten(shisetu_name)
-        if self.cgym.has(shisetu_name):
+        existed = self.cgym.has(shisetu_name)
+        if existed:
             self.shisetu = self.cgym.get_shisetu(shisetu_name)
         else:
             self.shisetu = Shisetu(shisetu_name)
 
-        if timeframe_count == 3:
-            evenings = []
-            nights = tr.td.table.tbody.select(evening_row)
+        # TODO 安直な実装方法・・・
+        if '第２' in shisetu_name:
+            mornings = tr.td.table.tbody.select(morning2_row)
+            afternoons = tr.td.table.tbody.select(afternoon2_row)
+            if timeframe_count == 3:
+                evenings = []
+                nights = tr.td.table.tbody.select(evening2_row)
+            else:
+                evenings = tr.td.table.tbody.select(evening2_row)
+                nights = tr.td.table.tbody.select(night2_row)
         else:
-            evenings = tr.td.table.tbody.select(evening_row)
-            nights = tr.td.table.tbody.select(night_row)
+            mornings = tr.td.table.tbody.select(morning_row)
+            afternoons = tr.td.table.tbody.select(afternoon_row)
+            if timeframe_count == 3:
+                evenings = []
+                nights = tr.td.table.tbody.select(evening_row)
+            else:
+                evenings = tr.td.table.tbody.select(evening_row)
+                nights = tr.td.table.tbody.select(night_row)
         
         for m, a, e, n in zip_longest(mornings, afternoons, evenings, nights):
             if "facmdstime" in m.get('class'):
@@ -294,16 +304,21 @@ class Opas:
                             
         day_index = 0
 
+    def get_shisetu_name(self, shisetu_obj):
+        return shisetu_obj.select_one('.clearfix').text
+
     def set_weekly_vacant(self, tr, shisetu):
+        # TODO s.text ではなく、s .clearfix の text では？
         if self.gym_name in self.gyms:
             # すでに施設名が存在する場合(2週目以降)
             for s in shisetu:
-                self.set_status(tr, s.text)
+                self.set_status(tr, self.get_shisetu_name(s))
         else:
             # 施設名が存在しない場合(1週目)
             self.gyms[self.gym_name] = {}
             for s in shisetu:
-                self.gyms[self.gym_name][s.text] = {
+                shisetu_name = self.get_shisetu_name(s)
+                self.gyms[self.gym_name][shisetu_name] = {
                     TIME_MORNING: {},
                     TIME_AFTERNOON1: {},
                     TIME_AFTERNOON2: {},
@@ -311,11 +326,12 @@ class Opas:
                     TIME_NIGHT1: {},
                     TIME_NIGHT2: {}
                 }
-                self.set_status(tr, s.text)
+                self.set_status(tr, shisetu_name)
 
         # class
         for s in shisetu:
-            self.set_status_for_class(tr, s.text)
+            shisetu_name = self.get_shisetu_name(s)
+            self.set_status_for_class(tr, shisetu_name)
             if not self.cgym.has(self.shisetu.name):
                 self.cgym.shisetu_list.append(self.shisetu)
 
@@ -351,8 +367,7 @@ class Opas:
             if existed is not None:
                 cgym = existed
             else:
-                name = Gym.shorten(self.gym_name)
-                cgym = Gym(name)
+                cgym = Gym(self.gym_name)
 
             self.cgym = cgym
 

@@ -15,7 +15,7 @@ TIME_NIGHT2 = 5
 時間帯が３つの場合は、9-12=0, 13-16:30=2, 17:30-21=4
 時間帯が４つの場合は、9-12=0, 12-15=1, 15-18=3, 18-21=5
 """
-timeframe_list = {
+timeframe_list_org = {
     TIME_MORNING: '09:00-12:00',
     TIME_AFTERNOON1: '12:00-15:00',
     TIME_AFTERNOON2: '13:00-16:30',
@@ -23,13 +23,21 @@ timeframe_list = {
     TIME_NIGHT1: '17:30-21:00',
     TIME_NIGHT2: '18:00-21:00',
 }
+timeframe_list = {
+    TIME_MORNING: '9-12',
+    TIME_AFTERNOON1: '12-15',
+    TIME_AFTERNOON2: '13-16.5',
+    TIME_EVENING: '15-18',
+    TIME_NIGHT1: '17.5-21',
+    TIME_NIGHT2: '18-21',
+}
 
+# 浪速は末尾に句点なし、西淀川はあり。
 shisetu_shortener = {
+    'サブアリーナ': '',
     '体育場': '',
     '１／２面': '',
     '体育館': '',
-    'フットサルの利用は、「その他（種目番号：９８８）」から申し込みください': '',
-    '現在、多目的室のエアコン（空調設備）故障中です。': '',
     '１': '1',
     '２': '2',
 }
@@ -46,7 +54,11 @@ class Shisetu:
         for k, v in shisetu_shortener.items():
             name = name.replace(k, v)
         
-        return name
+        # TODO いけてない
+        if len(name) == 0:
+            return ''
+        else:
+            return ' ' + name
 
     def set_vacant(self, date, timeframe, status):
         if status == 0:
@@ -82,7 +94,7 @@ class Shisetu:
                 if status == 1:
                     res += ' ' + timeframe_list[tf]
                 elif status == 2:
-                    res += ' ' + timeframe_list[tf] + '(予)'
+                    res += ' ' + timeframe_list[tf] + '予'
                 else:
                     continue
             res += '\n'
@@ -95,7 +107,7 @@ gym_shortener = {
     'サンエイワーク': '',
     'フィットネス２１': '',
     'ＨＳＴ': '',
-    '丸善インテックアリーナ大阪（中央体育館）': '中央体育館',
+    '丸善インテックアリーナ大阪（中央体育館）': '丸善インテックアリーナ',
     '体育館': '',
     '明治スポーツプラザ浪速': '浪速',
     '１': '1',
@@ -109,8 +121,8 @@ class Gym:
     name: str = 'undefined'
     shisetu_list: list[Shisetu] = dataclasses.field(default_factory=list)
 
-    def __post_init__(self):
-        self.name = self.shorten(self.name)
+    # def __post_init__(self):
+    #     self.name = self.shorten(self.name)
     
     @classmethod
     def shorten(cls, name) -> str:
@@ -156,5 +168,16 @@ class Gym:
                 vacant_days = s.get_vacant_days()
                 if len(vacant_days) == 0:
                     continue
-                res += '[' + self.name + ' ' + s.name + ']\n' + vacant_days + '\n'
+                gym_name = self.shorten(self.name)
+                shisetu_name = s.shorten(s.name)
+                res += '[' + gym_name + shisetu_name + ']\n' + vacant_days + '\n'
         return res
+
+if __name__ == '__main__':
+    gym = Gym('淀川')
+    shisetu = Shisetu('第１体育場')
+    gym.shisetu_list.append(shisetu)
+    if gym.has('第１体育場'):
+        print('yes')
+    else:
+        print('no')
