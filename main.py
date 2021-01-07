@@ -19,7 +19,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.select import Select
 from flask import Flask, jsonify, abort, make_response, request
 from flask_cors import CORS
-from memory_profiler import profile
 from bs4 import BeautifulSoup
 
 from line_notify_bot import LINENotifyBot
@@ -69,13 +68,15 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 変数定義部
 # Windows
-if os.name == "nt":
-    chromedriver_path = 'C:\\bin\\chromedriver.exe'
-    binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+# if os.name == "nt":
+#     chromedriver_path = 'C:\\bin\\chromedriver.exe'
+#     binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
 # Mac: Darwin, Linux: Linux
-else:
-    chromedriver_path = '/usr/lib/chromium/chromedriver'
-    binary_location = '/usr/bin/chromium-browser'
+# else:
+#     chromedriver_path = '/usr/lib/chromium/chromedriver'
+#     binary_location = '/usr/bin/chromium-browser'
+chromedriver_path = '/usr/lib/chromium/chromedriver'
+binary_location = '/usr/bin/chromium-browser'
 
 morning_row = 'tr:nth-of-type(3) > td'
 afternoon_row = 'tr:nth-of-type(4) > td'
@@ -107,7 +108,7 @@ class Opas:
 
     options = Options()
     options.binary_location = binary_location
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     # options.add_argument('--window-size=1200x600')
@@ -166,9 +167,9 @@ class Opas:
             return
 
         # TODO 体育館を複数選択する
-        if len(rec_nums) == 0:
-            for rec_num in rec_nums:
-                print(rec_num)
+        # if len(rec_nums) == 0:
+        #     for rec_num in rec_nums:
+        #         print(rec_num)
 
     def set_date(self):
         today = datetime.date.today()
@@ -194,8 +195,8 @@ class Opas:
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
         # デバッグ用
-        with open(OUTPUT_HTML, 'w') as f:
-            f.write(joined)
+        # with open(OUTPUT_HTML, 'w') as f:
+        #     f.write(joined)
 
         self.__driver.quit()
 
@@ -209,45 +210,6 @@ class Opas:
         Select(year).select_by_value("{}".format(y))
         Select(month).select_by_value("{:02d}".format(m))
         Select(day).select_by_value("{:02d}".format(d))
-
-    # TODO どうにか共通化。重なる部分が多い。
-    def set_status(self, tr, shisetu_name):
-        # コート名と日付部分とページ移動部分を除く(-3)
-        timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
-        day_index = 0
-        mornings = tr.td.table.tbody.select(morning_row)
-        afternoons = tr.td.table.tbody.select(afternoon_row)
-
-        if timeframe_count == 3:
-            evenings = []
-            nights = tr.td.table.tbody.select(evening_row)
-        else:
-            evenings = tr.td.table.tbody.select(evening_row)
-            nights = tr.td.table.tbody.select(night_row)
-        
-        for m, a, e, n in zip_longest(mornings, afternoons, evenings, nights):
-            if "facmdstime" in m.get('class'):
-                continue
-            else:
-                target_date = self.base_date + relativedelta(days=day_index)
-                date_str = target_date.strftime(DATE_FORMAT)
-                m_status = self.get_vacant_status(m.find("img").get("src") + m.text)
-                a_status = self.get_vacant_status(a.find("img").get("src") + a.text)
-                n_status = self.get_vacant_status(n.find("img").get("src") + n.text)
-                if e is not None:
-                    e_status = self.get_vacant_status(e.find("img").get("src") + e.text)
-                if timeframe_count == 3:
-                    self.gyms[self.gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_AFTERNOON2][date_str] = a_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_NIGHT1][date_str] = n_status
-                else:
-                    self.gyms[self.gym_name][shisetu_name][TIME_MORNING][date_str] = m_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_AFTERNOON1][date_str] = a_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_EVENING][date_str] = e_status
-                    self.gyms[self.gym_name][shisetu_name][TIME_NIGHT2][date_str] = n_status
-                day_index += 1
-                            
-        day_index = 0
 
     def set_status_for_class(self, tr, shisetu_name):
         # コート名と日付部分とページ移動部分を除く(-3)
@@ -308,27 +270,6 @@ class Opas:
         return shisetu_obj.select_one('.clearfix').text
 
     def set_weekly_vacant(self, tr, shisetu):
-        # TODO s.text ではなく、s .clearfix の text では？
-        if self.gym_name in self.gyms:
-            # すでに施設名が存在する場合(2週目以降)
-            for s in shisetu:
-                self.set_status(tr, self.get_shisetu_name(s))
-        else:
-            # 施設名が存在しない場合(1週目)
-            self.gyms[self.gym_name] = {}
-            for s in shisetu:
-                shisetu_name = self.get_shisetu_name(s)
-                self.gyms[self.gym_name][shisetu_name] = {
-                    TIME_MORNING: {},
-                    TIME_AFTERNOON1: {},
-                    TIME_AFTERNOON2: {},
-                    TIME_EVENING: {},
-                    TIME_NIGHT1: {},
-                    TIME_NIGHT2: {}
-                }
-                self.set_status(tr, shisetu_name)
-
-        # class
         for s in shisetu:
             shisetu_name = self.get_shisetu_name(s)
             self.set_status_for_class(tr, shisetu_name)
@@ -349,7 +290,6 @@ class Opas:
         # 計測start(3.8s)
         # start = time.time()
 
-        # TODO class に置き換える
         for i, tr in enumerate(tr_list):  # 140
             shisetu = tr.select(".shisetu_name")
             if len(shisetu) == 0:
@@ -358,7 +298,6 @@ class Opas:
             self.base_date = datetime.date(self.year, self.month, self.day) + relativedelta(weeks=int(i/GYM_COUNT))
             self.gym_name = tr.select_one(".kaikan_title").text.replace(' ', '')
 
-            # class
             existed = None
             for cgym in self.cgyms:
                 if cgym.name == self.gym_name:
@@ -370,31 +309,22 @@ class Opas:
                 cgym = Gym(self.gym_name)
 
             self.cgym = cgym
-
             self.set_weekly_vacant(tr, shisetu)
 
-            # class
             if not self.cgym_duplicated(cgym):
                 self.cgyms.append(cgym)
-
-        res = ''
-        for cgym in self.cgyms:
-            res += cgym.to_msg()
-        api.logger.info('\n' + res)
 
         # 計測end
         # elapsed_time = time.time() - start
         # api.logger.info("elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
-        # jsonに吐き出してデバッグ
-        # d = json.dumps(self.gyms, ensure_ascii=False, indent=4)
         # jsonに吐き出してデバッグ(class)
-        output = {}
-        for cgym in self.cgyms:
-            output[cgym.name] = dataclasses.asdict(cgym)
-        d = json.dumps(output, ensure_ascii=False, indent=4)
-        with open('./output.json', 'w') as f:
-            f.write(d)
+        # output = {}
+        # for cgym in self.cgyms:
+        #     output[cgym.name] = dataclasses.asdict(cgym)
+        # d = json.dumps(output, ensure_ascii=False, indent=4)
+        # with open('./output.json', 'w') as f:
+        #     f.write(d)
 
     def get_vacant_status(self, img_src) -> int:
         if 'maru.png' in img_src:
@@ -404,67 +334,19 @@ class Opas:
         else:
             return STATUS_RESERVED
 
-    """
-    TODO Cognitive Complexity
-    """
     def create_message_from_list(self) -> str:
         """空きリストからLINEメッセージを作成する"""
-        message = ''
-        str_to_append = ''
-        for self.gym_name, court in self.gyms.items():
-            self.gym_name = self.gym_name.replace(' ', '')
-            for court_name, timeframe in court.items():
-                i = 0
-                for timeframe_num, vacant_status in timeframe.items():
-                    if len(str_to_append) == 0:
-                        i = 0
-                    timeframe_num = int(timeframe_num)
-                    # debugのため時間帯が午後２、夕方、夜１、夜２のものだけ表示
-                    # TODO 複数時間帯に空きがあり、かつ一つ目の時間帯の空きに土日がない場合、文字列がクリアされる
-                    # ゆえに、ジム名とコート名がなくなる。
-                    # 暫定対処として追加文字列が空ならインデックスを０にする
-                    if timeframe_num in [TIME_AFTERNOON1, TIME_AFTERNOON2, TIME_EVENING, TIME_NIGHT1, TIME_NIGHT2]:
-                        if len(vacant_status) > 0 and any(vacant_status.values()):
-                            str_to_append = ''
-                            if i == 0:
-                                str_to_append += '\n'
-                                str_to_append += '['+self.gym_name + \
-                                    ' ' + court_name + ']'
-                                str_to_append += '\n'
-                            str_to_append += timeframe_list[int(timeframe_num)]
-                            str_to_append += '\n'
-                            for date, status in vacant_status.items():
-                                if status:
-                                    str_to_append += ' '
-                                    date_dt = datetime.datetime.strptime(date, DATE_FORMAT)
-                                    if timeframe_num in [TIME_AFTERNOON2, TIME_EVENING]:
-                                        if date_dt.strftime('%a') in ['土', '日'] or date_dt.strftime('%a') in ['Sat', 'Sun']:
-                                            str_to_append += date_dt.strftime(DISPLAY_DATE_FORMAT)
-                                            if status == 2:
-                                                str_to_append += '(予)'
-                                            str_to_append += '\n'
-                                        else:
-                                            str_to_append = ''
-                                    else:
-                                        str_to_append += date_dt.strftime(
-                                            DISPLAY_DATE_FORMAT)
-                                        if status == 2:
-                                            str_to_append += '(予)'
-                                        str_to_append += '\n'
-                            message += str_to_append
-                            i += 1
+        msg = ''
+        for cgym in self.cgyms:
+            msg += cgym.to_msg()
+        return '\n' + msg
 
-        message = common.remove_redundunt(message)
-        message = common.to_japanese_day(message)
-        if len(message) == 0:
-            message = 'なし'
-        return message
-
-    def send_line(self, message: str):
+    def send_line(self, msg: str):
         """LINEを送る"""
-        api.logger.info('message: %s', message)
-        # bot = LINENotifyBot(access_token=LINE_TOKEN)
-        # bot.send(message=message)
+        # 最後の2文字(\n)を削除
+        # api.logger.info('message: %s', msg[0:len(msg)-2])
+        bot = LINENotifyBot(access_token=LINE_TOKEN)
+        bot.send(message=msg[0:len(msg)-2])
 
     # TODO なんかいけてない
     def get_vacant(self):
@@ -484,104 +366,102 @@ class Opas:
         })
 
 # TODO メモリ使用量を調べる
-@profile
 @api.route('/vacants', methods=['GET'])
 def get_vacant():
     opas = Opas()
-    res = opas.get_vacant()
+    msg = opas.get_vacant()
     # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
-    return res
+    # return msg
 
 # DEBUG
-@profile
-@api.route('/debug/vacants', methods=['GET'])
-def debug_get_vacant():
-    opas = Opas()
-    """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-    # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
-    with open(OUTPUT_HTML) as f:
-        html = f.read()
-    opas.set_date()
-    opas.get_vacant_list(html)
-    message = opas.create_message_from_list()
-    opas.send_line(message)
-    return jsonify({
-        'status': 'OK',
-        'data': message
-    })
+# @api.route('/debug/vacants', methods=['GET'])
+# def debug_get_vacant():
+#     opas = Opas()
+#     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
+#     # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
+#     with open(OUTPUT_HTML) as f:
+#         html = f.read()
+#     opas.set_date()
+#     opas.get_vacant_list(html)
+#     message = opas.create_message_from_list()
+#     opas.send_line(message)
+#     return jsonify({
+#         'status': 'OK',
+#         'data': message
+#     })
 
 # 予約する
-@api.route('/reserve', methods=['GET'])
-def reserve():
-    """予約する"""
-    opas = Opas()
-    driver = opas.init_driver()
-    opas.login(OPAS_ID, OPAS_PASSWORD)
-    opas.select_category(is_login=True)
-    # opas.select_gym(is_all=False)
-    # 体育館・コートを選択
-    driver.find_element_by_id("i_record16").click() # なにわ第一
-    # driver.find_element_by_id("i_record22").click() # 東成第一
-    driver.find_element_by_xpath(xpath['next']).click()
+# @api.route('/reserve', methods=['GET'])
+# def reserve():
+#     """予約する"""
+#     opas = Opas()
+#     driver = opas.init_driver()
+#     opas.login(OPAS_ID, OPAS_PASSWORD)
+#     opas.select_category(is_login=True)
+#     # opas.select_gym(is_all=False)
+#     # 体育館・コートを選択
+#     driver.find_element_by_id("i_record16").click() # なにわ第一
+#     # driver.find_element_by_id("i_record22").click() # 東成第一
+#     driver.find_element_by_xpath(xpath['next']).click()
 
-    # 日付選択
-    # TODO 希望の年月日を選択する
-    opas.select_date(2021, 1, 17) # 浪速1/17 12-15
-    # opas.select_date(2021, 2, 9) # 東成2/9
-    driver.find_element_by_xpath(xpath['display']).click()
+#     # 日付選択
+#     # TODO 希望の年月日を選択する
+#     opas.select_date(2021, 1, 17) # 浪速1/17 12-15
+#     # opas.select_date(2021, 2, 9) # 東成2/9
+#     driver.find_element_by_xpath(xpath['display']).click()
 
-    # ポップアップ OK
-    driver.find_element_by_xpath(xpath['popup_ok']).click()
+#     # ポップアップ OK
+#     driver.find_element_by_xpath(xpath['popup_ok']).click()
 
-    # 予約対象区分選択（日付選択後）
-    # テキトーに最初のやつ選択
-    # TODO 希望の日時を指定する
-    driver.find_element_by_id("i_record0").click()
+#     # 予約対象区分選択（日付選択後）
+#     # テキトーに最初のやつ選択
+#     # TODO 希望の日時を指定する
+#     driver.find_element_by_id("i_record0").click()
 
-    # 次に進む
-    driver.find_element_by_xpath(xpath['next']).click()
+#     # 次に進む
+#     driver.find_element_by_xpath(xpath['next']).click()
 
-    # 申込内容入力
-    driver.find_element_by_id("numberOfRiyosha").send_keys('22')
+#     # 申込内容入力
+#     driver.find_element_by_id("numberOfRiyosha").send_keys('22')
 
-    # 次に進む
-    driver.find_element_by_xpath(xpath['next']).click()
+#     # 次に進む
+#     driver.find_element_by_xpath(xpath['next']).click()
 
-    # 利用規約
-    driver.find_element_by_id("img_chkRiyoKiyaku").click()
+#     # 利用規約
+#     driver.find_element_by_id("img_chkRiyoKiyaku").click()
 
-    # kaptcha 取得
-    kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
-    with open('./kaptcha.png', 'wb') as f:
-        f.write(kaptcha)
+#     # kaptcha 取得
+#     kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
+#     # with open('./kaptcha.png', 'wb') as f:
+#     #     f.write(kaptcha)
 
-    url = "http://2captcha.com/in.php"
-    req_data = {
-        'key': CAPTCHA_KEY,
-        'method': 'base64',
-        'body': base64.b64encode(kaptcha),
-        'lang': 'ja',
-        'numeric': 4,
-        'min_len': 5,
-        'max_len': 5,
-        'language': 2,
-    }
-    res = requests.post(url, req_data)
-    if res.text[0:2] != 'OK':
-        quit('Service error. Error code:' + res.text)
-    captcha_id = res.text[3:]
-    time.sleep(3)  # 解析が終わるまで待つ
-    res_url = "https://2captcha.com/res.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
-    res = requests.get(res_url)
-    if res.status_code == 200 and res.text[0:2] == 'OK':
-        kaptcha_txt = res.text[3:]
-        driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
-        # 確定
-        driver.find_element_by_xpath(xpath['fix']).click()
-        # OK
-        driver.find_element_by_xpath(xpath['popup_ok']).click()
-        time.sleep(5)  # 余韻に浸る
-    return ''
+#     url = "http://2captcha.com/in.php"
+#     req_data = {
+#         'key': CAPTCHA_KEY,
+#         'method': 'base64',
+#         'body': base64.b64encode(kaptcha),
+#         'lang': 'ja',
+#         'numeric': 4,
+#         'min_len': 5,
+#         'max_len': 5,
+#         'language': 2,
+#     }
+#     msg = requests.post(url, req_data)
+#     if msg.text[0:2] != 'OK':
+#         quit('Service error. Error code:' + msg.text)
+#     captcha_id = msg.text[3:]
+#     time.sleep(3)  # 解析が終わるまで待つ
+#     res_url = "https://2captcha.com/msg.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
+#     msg = requests.get(res_url)
+#     if msg.status_code == 200 and msg.text[0:2] == 'OK':
+#         kaptcha_txt = msg.text[3:]
+#         driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
+#         # 確定
+#         driver.find_element_by_xpath(xpath['fix']).click()
+#         # OK
+#         driver.find_element_by_xpath(xpath['popup_ok']).click()
+#         time.sleep(5)  # 余韻に浸る
+#     return ''
 
 if __name__ == '__main__':
-    api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
+    api.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))

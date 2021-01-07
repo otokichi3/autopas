@@ -13,9 +13,11 @@ node_modules
 .env
 *.log
 decorator.py
-docker-compose.yml
 env.ps1
 *.csv
 *.html
 *.json
-reserve.py
+.vscode
+__pycache__
+*.png
+test_main.py

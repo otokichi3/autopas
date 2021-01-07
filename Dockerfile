@@ -22,6 +22,8 @@ COPY . /app
 ENV opas_id 27041850
 ENV opas_password OPASyskt1829
 ENV line_token hM4JwG7IXMwJlHtNc5sD3G9HRYRYyd5CsNujbpncq3W
+ENV line_token_test doc8vdAug3XaaicmRv4ABMLu7GvHxPFoMt8srUAupxl
+ENV captcha_key 4b88a4c42fbaa1bbaa64690ebc6fbac6
 
 # Set the WORKDIR to be the folder
 WORKDIR /app

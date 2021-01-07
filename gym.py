@@ -42,15 +42,14 @@ shisetu_shortener = {
     '２': '2',
 }
 
-# TODO これらのクラスを opas.py で使用する
-@dataclasses.dataclass
+# @dataclasses.dataclass
 class Shisetu:
     """施設"""
-    name: str = 'undefined'
-    vacant_table: dict[dict[int]] = dataclasses.field(default_factory=dict)
-
-    @classmethod
-    def shorten(cls, name) -> str:
+    def __init__(self, name):
+        self.name = name
+        self.vacant_table = {}
+        
+    def shorten(self, name) -> str:
         for k, v in shisetu_shortener.items():
             name = name.replace(k, v)
         
@@ -70,25 +69,30 @@ class Shisetu:
             self.vacant_table[date] = {}
             self.vacant_table[date][timeframe] = status
     
-    def vacant_filter(self):
-        # TODO 土日でなく欲しい時間帯でもなければ status を 0 にしてしまう、とか
-        # dayoff 土日だけ
-        dayoff_vacant = dict(filter(lambda item: '土' in item[0] or '日' in item[0], self.vacant_table.items()))
-        # dayoff-time 土日の12時以降
-        # TODO 時間帯で絞る処理
-        dayoff_time_vacant = dict(filter(lambda item: item[1] in [1,2,3,4,5], dayoff_vacant.items()))
-        # weekday-time 平日だけ
-        weekday_vacant = dict(filter(lambda item: '土' not in item[0] or '日' not in item[0], self.vacant_table.items()))
-        # weekday-time 平日の17時以降
-        weekday_time_vacant = dict(filter(lambda item: item[0] in [4, 5], weekday_vacant.items()))
-
-        return dayoff_time_vacant.update(weekday_time_vacant)
+    def vacant_filter(self, only_holiday=None):
+        # 反復中の辞書は変更出来ないため、一時辞書を用意
+        temp_table = self.vacant_table
+        weekday = ['月', '火', '水', '木', '金']
+        weekend = ['土', '日']
+        # 削除条件１：平日かつ朝～夕の枠
+        # 削除条件２：休日かつ朝の枠
+        for date, tf_list in temp_table.items():
+            youbi = datetime.datetime.strptime(date, DATE_FORMAT).strftime('%a')
+            for tf in list(tf_list.keys()):
+                cond1 = youbi in weekday and tf < TIME_NIGHT1
+                cond2 = youbi in weekend and tf == TIME_MORNING
+                if cond1 or cond2:
+                    del self.vacant_table[date][tf]
         
+        # 空になった日付の後始末
+        for date in list(self.vacant_table.keys()):
+            if len(self.vacant_table[date]) == 0:
+                del self.vacant_table[date]
+                
     def get_vacant_days(self) -> str:
-        # filtered_vacant_table = self.vacant_filter()
-        filtered_vacant_table = self.vacant_table
+        self.vacant_filter()
         res = ''
-        for date, tf_list in filtered_vacant_table.items():
+        for date, tf_list in self.vacant_table.items():
             date_dt = datetime.datetime.strptime(date, DATE_FORMAT)
             res += ' ' + date_dt.strftime(DISPLAY_DATE_FORMAT)
             for tf, status in tf_list.items():
@@ -116,17 +120,17 @@ gym_shortener = {
     '明治スポーツプラザ': '',
 }
 
-@dataclasses.dataclass
+# @dataclasses.dataclass
 class Gym:
     """体育館"""
-    name: str = 'undefined'
-    shisetu_list: list[Shisetu] = dataclasses.field(default_factory=list)
+    # name: str = 'undefined'
+    # shisetu_list: list[Shisetu] = dataclasses.field(default_factory=list)
 
-    # def __post_init__(self):
-    #     self.name = self.shorten(self.name)
-    
-    @classmethod
-    def shorten(cls, name) -> str:
+    def __init__(self, name):
+        self.name = name
+        self.shisetu_list = []
+
+    def shorten(self, name) -> str:
         for k, v in gym_shortener.items():
             name = name.replace(k, v)
         
@@ -173,12 +177,3 @@ class Gym:
                 shisetu_name = s.shorten(s.name)
                 res += '[' + gym_name + shisetu_name + ']\n' + vacant_days + '\n'
         return res
-
-if __name__ == '__main__':
-    gym = Gym('淀川')
-    shisetu = Shisetu('第１体育場')
-    gym.shisetu_list.append(shisetu)
-    if gym.has('第１体育場'):
-        print('yes')
-    else:
-        print('no')
