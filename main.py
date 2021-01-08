@@ -66,7 +66,6 @@ STATUS_TO_BE_VACANT = 2
 # END
 
 # TODO Opas クラスが役割多すぎるしコードも多すぎるため簡素化する
-# TODO 予約メソッドを作成する
 class Opas:
     timeframes = []
     gyms = {}
