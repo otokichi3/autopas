@@ -33,8 +33,8 @@ locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
-LINE_TOKEN = os.environ['line_token']
-# LINE_TOKEN = os.environ['line_token_test']
+# LINE_TOKEN = os.environ['line_token']
+LINE_TOKEN = os.environ['line_token_test']
 CAPTCHA_KEY = os.environ['captcha_key']
 GYM_COUNT = 28
 COURT_COUNT = 37
@@ -59,15 +59,6 @@ if os.name == "nt":
 else:
     chromedriver_path = '/usr/lib/chromium/chromedriver'
     binary_location = '/usr/bin/chromium-browser'
-
-morning_row = 'tr:nth-of-type(3) > td'
-afternoon_row = 'tr:nth-of-type(4) > td'
-evening_row = 'tr:nth-of-type(5) > td'
-night_row = 'tr:nth-of-type(6) > td'
-morning2_row = 'tr:nth-of-type(10) > td'
-afternoon2_row = 'tr:nth-of-type(11) > td'
-evening2_row = 'tr:nth-of-type(12) > td'
-night2_row = 'tr:nth-of-type(13) > td'
 
 STATUS_RESERVED = 0
 STATUS_VACANT = 1
@@ -166,8 +157,8 @@ class Opas:
         # 翌月の週ごとに HTML を取得する
         weekly_htmls = []
         # 日数が短い月は4週、とか。
-        month_count = 5 if self.month != 2 else 4
-        for i in range(month_count):
+        week_count = 5 if self.month != 2 else 4
+        for i in range(week_count):
             target = self.first_week + relativedelta(weeks=+i)
             self.select_date(target.year, target.month, target.day)
             self.__driver.find_element_by_xpath(xpath['display']).click()
@@ -177,8 +168,8 @@ class Opas:
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
         # デバッグ用
-        # with open(OUTPUT_HTML, 'w') as f:
-        #     f.write(joined)
+        with open(OUTPUT_HTML, 'w') as f:
+            f.write(joined)
 
         self.__driver.quit()
 
@@ -194,28 +185,21 @@ class Opas:
         Select(day).select_by_value("{:02d}".format(d))
 
     def get_vacant_rows(self, tr, timeframe_count, shisetu_name):
-        if '第２' in shisetu_name:
-            mornings = tr.td.table.tbody.select(morning2_row)
-            afternoons = tr.td.table.tbody.select(afternoon2_row)
-            if timeframe_count == 3:
-                evenings = []
-                nights = tr.td.table.tbody.select(evening2_row)
+        start_num = 3 if '第２' not in shisetu_name else 10
+        time_rows = []
+        for count in range(4):
+            ele = 'tr:nth-of-type({}) > td'
+            row = tr.td.table.tbody.select(ele.format(start_num + count))
+            # 時間帯が３つかつ夕方の場合
+            if timeframe_count == 3 and count == 2:
+                time_rows.append([])
+                time_rows.append(row)
+                break
             else:
-                evenings = tr.td.table.tbody.select(evening2_row)
-                nights = tr.td.table.tbody.select(night2_row)
-        else:
-            mornings = tr.td.table.tbody.select(morning_row)
-            afternoons = tr.td.table.tbody.select(afternoon_row)
-            if timeframe_count == 3:
-                evenings = []
-                nights = tr.td.table.tbody.select(evening_row)
-            else:
-                evenings = tr.td.table.tbody.select(evening_row)
-                nights = tr.td.table.tbody.select(night_row)
+                time_rows.append(row)
+        return time_rows
 
-        return mornings, afternoons, evenings, nights
-
-    def set_status_for_class(self, tr, shisetu_name):
+    def set_status(self, tr, shisetu_name):
         # コート名と日付部分とページ移動部分を除く(-3)
         timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
         day_index = 0
@@ -258,7 +242,7 @@ class Opas:
     def set_weekly_vacant(self, tr, shisetu):
         for s in shisetu:
             shisetu_name = self.get_shisetu_name(s)
-            self.set_status_for_class(tr, shisetu_name)
+            self.set_status(tr, shisetu_name)
             if not self.cgym.has(self.shisetu.name):
                 self.cgym.shisetu_list.append(self.shisetu)
 
@@ -304,14 +288,6 @@ class Opas:
         # elapsed_time = time.time() - start
         # api.logger.info("elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
-        # jsonに吐き出してデバッグ(class)
-        # output = {}
-        # for cgym in self.cgyms:
-        #     output[cgym.name] = dataclasses.asdict(cgym)
-        # d = json.dumps(output, ensure_ascii=False, indent=4)
-        # with open('./output.json', 'w') as f:
-        #     f.write(d)
-
     def get_vacant_status(self, img_src) -> int:
         if 'maru.png' in img_src:
             return STATUS_VACANT
@@ -350,7 +326,6 @@ class Opas:
             'data': message
         })
 
-# TODO メモリ使用量を調べる
 @api.route('/vacants', methods=['GET'])
 def get_vacant():
     opas = Opas()
@@ -361,9 +336,8 @@ def get_vacant():
 # DEBUG
 @api.route('/debug/vacants', methods=['GET'])
 def debug_get_vacant():
-    opas = Opas()
     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-    # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
+    opas = Opas()
     with open(OUTPUT_HTML) as f:
         html = f.read()
     opas.set_date()
