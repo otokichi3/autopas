@@ -33,7 +33,8 @@ locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
-LINE_TOKEN = os.environ['line_token_test']
+LINE_TOKEN = os.environ['line_token']
+# LINE_TOKEN = os.environ['line_token_test']
 CAPTCHA_KEY = os.environ['captcha_key']
 GYM_COUNT = 28
 COURT_COUNT = 37
@@ -122,7 +123,7 @@ class Opas:
         """OPASにログインする"""
         self.__driver.find_element_by_name("txtRiyoshaCode").send_keys(id)
         self.__driver.find_element_by_name("txtPassWord").send_keys(password)
-        self.__driver.find_element_by_xpath(xpath['login']).click()
+        self.__driver.find_element_by_xpath(xpath['loginbtn']).click()
 
     # ログインしている場合はログイン空き照会、そうでない場合はトップの空き照会
     def inquire(self, is_login: bool):
@@ -384,21 +385,20 @@ def reserve():
     opas.select_category(is_login=True)
     # opas.select_gym(is_all=False)
     # 体育館・コートを選択
-    driver.find_element_by_id("i_record16").click() # なにわ第一
+    # driver.find_element_by_id("i_record16").click() # なにわ第一
     # driver.find_element_by_id("i_record22").click() # 東成第一
+    driver.find_element_by_id("i_record35").click() # 西成第二
     driver.find_element_by_xpath(xpath['next']).click()
 
     # 日付選択
     # TODO 希望の年月日を選択する
-    opas.select_date(2021, 1, 17) # 浪速1/17 12-15
-    # opas.select_date(2021, 2, 9) # 東成2/9
+    opas.select_date(2021, 2, 11) # 西成第２の18-21
     driver.find_element_by_xpath(xpath['display']).click()
 
     # ポップアップ OK
     driver.find_element_by_xpath(xpath['popup_ok']).click()
 
     # 予約対象区分選択（日付選択後）
-    # テキトーに最初のやつ選択
     # TODO 希望の日時を指定する
     driver.find_element_by_id("i_record0").click()
 

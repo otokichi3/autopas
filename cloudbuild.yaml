@@ -1,16 +1,10 @@
 steps:
-  # Build the container image
-  # - name: "gcr.io/cloud-builders/docker"
-  #   args: ["build", "-t", "gcr.io/opas-badminton-dev/opas", "."]
-  # Use Kaniko cache instead
+  # Use Kaniko cache
   - name: 'gcr.io/kaniko-project/executor:latest'
     args:
-    - --destination=gcr.io/opas-badminton-dev/image
+    - --destination=gcr.io/opas-badminton-dev/opas
     - --cache=true
     - --cache-ttl=1h
-  # Push the container image to Container Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/opas-badminton-dev/opas"]
   # Deploy container image to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -30,5 +24,3 @@ steps:
         "--platform",
         "managed",
       ]
-images:
-  - gcr.io/opas-badminton-dev/opas

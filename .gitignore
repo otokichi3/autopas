@@ -133,3 +133,5 @@ dmypy.json
 app/*.log
 
 *.ps1
+output.html
+output.json
