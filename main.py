@@ -26,12 +26,10 @@ from gym import Shisetu, Gym
 import common
 from xpath import xpath
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-
 api = Flask(__name__)
 CORS(api)
 
-locale.setlocale(locale.LC_TIME, 'Japanese_Japan.932')
+locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
@@ -47,36 +45,19 @@ TIME_EVENING = 3
 TIME_NIGHT1 = 4
 TIME_NIGHT2 = 5
 
-"""
-時間帯が３つの場合は、9-12=0, 13-16:30=2, 17:30-21=4
-時間帯が４つの場合は、9-12=0, 12-15=1, 15-18=3, 18-21=5
-"""
-timeframe_list = {
-    TIME_MORNING: '09:00 ～ 12:00',
-    TIME_AFTERNOON1: '12:00 ～ 15:00',
-    TIME_AFTERNOON2: '13:00 ～ 16:30',
-    TIME_EVENING: '15:00 ～ 18:00',
-    TIME_NIGHT1: '17:30 ～ 21:00',
-    TIME_NIGHT2: '18:00 ～ 21:00',
-}
-
 DATE_FORMAT = '%Y-%m-%d'
 DISPLAY_DATE_FORMAT = '%m-%d(%a)'
 OUTPUT_HTML = './output.html'
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-
 # 変数定義部
 # Windows
-# if os.name == "nt":
-#     chromedriver_path = 'C:\\bin\\chromedriver.exe'
-#     binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+if os.name == "nt":
+    chromedriver_path = 'C:\\bin\\chromedriver.exe'
+    binary_location = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
 # Mac: Darwin, Linux: Linux
-# else:
-#     chromedriver_path = '/usr/lib/chromium/chromedriver'
-#     binary_location = '/usr/bin/chromium-browser'
-chromedriver_path = '/usr/lib/chromium/chromedriver'
-binary_location = '/usr/bin/chromium-browser'
+else:
+    chromedriver_path = '/usr/lib/chromium/chromedriver'
+    binary_location = '/usr/bin/chromium-browser'
 
 morning_row = 'tr:nth-of-type(3) > td'
 afternoon_row = 'tr:nth-of-type(4) > td'
@@ -211,18 +192,7 @@ class Opas:
         Select(month).select_by_value("{:02d}".format(m))
         Select(day).select_by_value("{:02d}".format(d))
 
-    def set_status_for_class(self, tr, shisetu_name):
-        # コート名と日付部分とページ移動部分を除く(-3)
-        timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
-        day_index = 0
-
-        existed = self.cgym.has(shisetu_name)
-        if existed:
-            self.shisetu = self.cgym.get_shisetu(shisetu_name)
-        else:
-            self.shisetu = Shisetu(shisetu_name)
-
-        # TODO 安直な実装方法・・・
+    def get_vacant_rows(self, tr, timeframe_count, shisetu_name):
         if '第２' in shisetu_name:
             mornings = tr.td.table.tbody.select(morning2_row)
             afternoons = tr.td.table.tbody.select(afternoon2_row)
@@ -241,6 +211,21 @@ class Opas:
             else:
                 evenings = tr.td.table.tbody.select(evening_row)
                 nights = tr.td.table.tbody.select(night_row)
+
+        return mornings, afternoons, evenings, nights
+
+    def set_status_for_class(self, tr, shisetu_name):
+        # コート名と日付部分とページ移動部分を除く(-3)
+        timeframe_count = len(tr.select("td > table > tbody > tr")) - 3
+        day_index = 0
+
+        existed = self.cgym.has(shisetu_name)
+        if existed:
+            self.shisetu = self.cgym.get_shisetu(shisetu_name)
+        else:
+            self.shisetu = Shisetu(shisetu_name)
+
+        mornings, afternoons, evenings, nights = self.get_vacant_rows(tr, timeframe_count, shisetu_name)
         
         for m, a, e, n in zip_longest(mornings, afternoons, evenings, nights):
             if "facmdstime" in m.get('class'):
@@ -344,7 +329,6 @@ class Opas:
     def send_line(self, msg: str):
         """LINEを送る"""
         # 最後の2文字(\n)を削除
-        # api.logger.info('message: %s', msg[0:len(msg)-2])
         bot = LINENotifyBot(access_token=LINE_TOKEN)
         bot.send(message=msg[0:len(msg)-2])
 
@@ -371,97 +355,97 @@ def get_vacant():
     opas = Opas()
     msg = opas.get_vacant()
     # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
-    # return msg
+    return msg
 
 # DEBUG
-# @api.route('/debug/vacants', methods=['GET'])
-# def debug_get_vacant():
-#     opas = Opas()
-#     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
-#     # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
-#     with open(OUTPUT_HTML) as f:
-#         html = f.read()
-#     opas.set_date()
-#     opas.get_vacant_list(html)
-#     message = opas.create_message_from_list()
-#     opas.send_line(message)
-#     return jsonify({
-#         'status': 'OK',
-#         'data': message
-#     })
+@api.route('/debug/vacants', methods=['GET'])
+def debug_get_vacant():
+    opas = Opas()
+    """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
+    # TODO テストデータでデバッグする（正しく取れないときのデータを保存しておこう）
+    with open(OUTPUT_HTML) as f:
+        html = f.read()
+    opas.set_date()
+    opas.get_vacant_list(html)
+    message = opas.create_message_from_list()
+    opas.send_line(message)
+    return jsonify({
+        'status': 'OK',
+        'data': message
+    })
 
 # 予約する
-# @api.route('/reserve', methods=['GET'])
-# def reserve():
-#     """予約する"""
-#     opas = Opas()
-#     driver = opas.init_driver()
-#     opas.login(OPAS_ID, OPAS_PASSWORD)
-#     opas.select_category(is_login=True)
-#     # opas.select_gym(is_all=False)
-#     # 体育館・コートを選択
-#     driver.find_element_by_id("i_record16").click() # なにわ第一
-#     # driver.find_element_by_id("i_record22").click() # 東成第一
-#     driver.find_element_by_xpath(xpath['next']).click()
+@api.route('/reserve', methods=['GET'])
+def reserve():
+    """予約する"""
+    opas = Opas()
+    driver = opas.init_driver()
+    opas.login(OPAS_ID, OPAS_PASSWORD)
+    opas.select_category(is_login=True)
+    # opas.select_gym(is_all=False)
+    # 体育館・コートを選択
+    driver.find_element_by_id("i_record16").click() # なにわ第一
+    # driver.find_element_by_id("i_record22").click() # 東成第一
+    driver.find_element_by_xpath(xpath['next']).click()
 
-#     # 日付選択
-#     # TODO 希望の年月日を選択する
-#     opas.select_date(2021, 1, 17) # 浪速1/17 12-15
-#     # opas.select_date(2021, 2, 9) # 東成2/9
-#     driver.find_element_by_xpath(xpath['display']).click()
+    # 日付選択
+    # TODO 希望の年月日を選択する
+    opas.select_date(2021, 1, 17) # 浪速1/17 12-15
+    # opas.select_date(2021, 2, 9) # 東成2/9
+    driver.find_element_by_xpath(xpath['display']).click()
 
-#     # ポップアップ OK
-#     driver.find_element_by_xpath(xpath['popup_ok']).click()
+    # ポップアップ OK
+    driver.find_element_by_xpath(xpath['popup_ok']).click()
 
-#     # 予約対象区分選択（日付選択後）
-#     # テキトーに最初のやつ選択
-#     # TODO 希望の日時を指定する
-#     driver.find_element_by_id("i_record0").click()
+    # 予約対象区分選択（日付選択後）
+    # テキトーに最初のやつ選択
+    # TODO 希望の日時を指定する
+    driver.find_element_by_id("i_record0").click()
 
-#     # 次に進む
-#     driver.find_element_by_xpath(xpath['next']).click()
+    # 次に進む
+    driver.find_element_by_xpath(xpath['next']).click()
 
-#     # 申込内容入力
-#     driver.find_element_by_id("numberOfRiyosha").send_keys('22')
+    # 申込内容入力
+    driver.find_element_by_id("numberOfRiyosha").send_keys('22')
 
-#     # 次に進む
-#     driver.find_element_by_xpath(xpath['next']).click()
+    # 次に進む
+    driver.find_element_by_xpath(xpath['next']).click()
 
-#     # 利用規約
-#     driver.find_element_by_id("img_chkRiyoKiyaku").click()
+    # 利用規約
+    driver.find_element_by_id("img_chkRiyoKiyaku").click()
 
-#     # kaptcha 取得
-#     kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
-#     # with open('./kaptcha.png', 'wb') as f:
-#     #     f.write(kaptcha)
+    # kaptcha 取得
+    kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
+    # with open('./kaptcha.png', 'wb') as f:
+    #     f.write(kaptcha)
 
-#     url = "http://2captcha.com/in.php"
-#     req_data = {
-#         'key': CAPTCHA_KEY,
-#         'method': 'base64',
-#         'body': base64.b64encode(kaptcha),
-#         'lang': 'ja',
-#         'numeric': 4,
-#         'min_len': 5,
-#         'max_len': 5,
-#         'language': 2,
-#     }
-#     msg = requests.post(url, req_data)
-#     if msg.text[0:2] != 'OK':
-#         quit('Service error. Error code:' + msg.text)
-#     captcha_id = msg.text[3:]
-#     time.sleep(3)  # 解析が終わるまで待つ
-#     res_url = "https://2captcha.com/msg.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
-#     msg = requests.get(res_url)
-#     if msg.status_code == 200 and msg.text[0:2] == 'OK':
-#         kaptcha_txt = msg.text[3:]
-#         driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
-#         # 確定
-#         driver.find_element_by_xpath(xpath['fix']).click()
-#         # OK
-#         driver.find_element_by_xpath(xpath['popup_ok']).click()
-#         time.sleep(5)  # 余韻に浸る
-#     return ''
+    url = "http://2captcha.com/in.php"
+    req_data = {
+        'key': CAPTCHA_KEY,
+        'method': 'base64',
+        'body': base64.b64encode(kaptcha),
+        'lang': 'ja',
+        'numeric': 4,
+        'min_len': 5,
+        'max_len': 5,
+        'language': 2,
+    }
+    msg = requests.post(url, req_data)
+    if msg.text[0:2] != 'OK':
+        quit('Service error. Error code:' + msg.text)
+    captcha_id = msg.text[3:]
+    time.sleep(3)  # 解析が終わるまで待つ
+    res_url = "https://2captcha.com/msg.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
+    msg = requests.get(res_url)
+    if msg.status_code == 200 and msg.text[0:2] == 'OK':
+        kaptcha_txt = msg.text[3:]
+        driver.find_element_by_name("txtKaptcha").send_keys(kaptcha_txt)
+        # 確定
+        driver.find_element_by_xpath(xpath['fix']).click()
+        # OK
+        driver.find_element_by_xpath(xpath['popup_ok']).click()
+        time.sleep(5)  # 余韻に浸る
+    return ''
 
 if __name__ == '__main__':
-    api.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
+    api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))

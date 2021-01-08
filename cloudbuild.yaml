@@ -1,13 +1,13 @@
 steps:
   # Build the container image
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/opas-badminton-dev/opas", "."]
+  # - name: "gcr.io/cloud-builders/docker"
+  #   args: ["build", "-t", "gcr.io/opas-badminton-dev/opas", "."]
   # Use Kaniko cache instead
-  # - name: 'gcr.io/kaniko-project/executor:latest'
-  #   args:
-  #   - --destination=gcr.io/opas-badminton-dev/image
-  #   - --cache=true
-  #   - --cache-ttl=1h
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+    - --destination=gcr.io/opas-badminton-dev/image
+    - --cache=true
+    - --cache-ttl=1h
   # Push the container image to Container Registry
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "gcr.io/opas-badminton-dev/opas"]

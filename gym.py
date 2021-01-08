@@ -3,7 +3,7 @@ import dataclasses
 from typing import List, Dict
 
 DATE_FORMAT = '%Y-%m-%d'
-DISPLAY_DATE_FORMAT = '%m-%d(%a)'
+DISPLAY_DATE_FORMAT = '%m-%d'
 
 TIME_MORNING = 0
 TIME_AFTERNOON1 = 1
@@ -16,20 +16,20 @@ TIME_NIGHT2 = 5
 時間帯が４つの場合は、9-12=0, 12-15=1, 15-18=3, 18-21=5
 """
 timeframe_list_org = {
-    TIME_MORNING: '09:00-12:00',
-    TIME_AFTERNOON1: '12:00-15:00',
-    TIME_AFTERNOON2: '13:00-16:30',
-    TIME_EVENING: '15:00-18:00',
-    TIME_NIGHT1: '17:30-21:00',
-    TIME_NIGHT2: '18:00-21:00',
-}
-timeframe_list = {
     TIME_MORNING: '9-12',
     TIME_AFTERNOON1: '12-15',
     TIME_AFTERNOON2: '13-16.5',
     TIME_EVENING: '15-18',
     TIME_NIGHT1: '17.5-21',
     TIME_NIGHT2: '18-21',
+}
+timeframe_list = {
+    TIME_MORNING: '朝',
+    TIME_AFTERNOON1: '昼',
+    TIME_AFTERNOON2: '昼',
+    TIME_EVENING: '夕',
+    TIME_NIGHT1: '夜',
+    TIME_NIGHT2: '夜',
 }
 
 # 浪速は末尾に句点なし、西淀川はあり。
@@ -42,7 +42,6 @@ shisetu_shortener = {
     '２': '2',
 }
 
-# @dataclasses.dataclass
 class Shisetu:
     """施設"""
     def __init__(self, name):
@@ -72,15 +71,13 @@ class Shisetu:
     def vacant_filter(self, only_holiday=None):
         # 反復中の辞書は変更出来ないため、一時辞書を用意
         temp_table = self.vacant_table
-        weekday = ['月', '火', '水', '木', '金']
-        weekend = ['土', '日']
         # 削除条件１：平日かつ朝～夕の枠
         # 削除条件２：休日かつ朝の枠
         for date, tf_list in temp_table.items():
-            youbi = datetime.datetime.strptime(date, DATE_FORMAT).strftime('%a')
+            youbi = datetime.datetime.strptime(date, DATE_FORMAT).weekday()
             for tf in list(tf_list.keys()):
-                cond1 = youbi in weekday and tf < TIME_NIGHT1
-                cond2 = youbi in weekend and tf == TIME_MORNING
+                cond1 = (youbi <= 4) and tf < TIME_NIGHT1
+                cond2 = (youbi >= 5) and tf == TIME_MORNING
                 if cond1 or cond2:
                     del self.vacant_table[date][tf]
         
@@ -90,16 +87,18 @@ class Shisetu:
                 del self.vacant_table[date]
                 
     def get_vacant_days(self) -> str:
+        youbi_list = ['月', '火', '水', '木', '金', '土', '日']
         self.vacant_filter()
         res = ''
         for date, tf_list in self.vacant_table.items():
             date_dt = datetime.datetime.strptime(date, DATE_FORMAT)
             res += ' ' + date_dt.strftime(DISPLAY_DATE_FORMAT)
+            res += '(' + youbi_list[date_dt.weekday()] + ')'
             for tf, status in tf_list.items():
                 if status == 1:
                     res += ' ' + timeframe_list[tf]
                 elif status == 2:
-                    res += ' ' + timeframe_list[tf] + '予'
+                    res += ' ' + timeframe_list[tf] + '(予)'
                 else:
                     continue
             res += '\n'
@@ -120,12 +119,8 @@ gym_shortener = {
     '明治スポーツプラザ': '',
 }
 
-# @dataclasses.dataclass
 class Gym:
     """体育館"""
-    # name: str = 'undefined'
-    # shisetu_list: list[Shisetu] = dataclasses.field(default_factory=list)
-
     def __init__(self, name):
         self.name = name
         self.shisetu_list = []
