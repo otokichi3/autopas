@@ -33,9 +33,10 @@ locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
-# LINE_TOKEN = os.environ['line_token']
-LINE_TOKEN = os.environ['line_token_test']
+LINE_TOKEN = os.environ['line_token']
+# LINE_TOKEN = os.environ['line_token_test']
 CAPTCHA_KEY = os.environ['captcha_key']
+
 GYM_COUNT = 28
 COURT_COUNT = 37
 
@@ -65,7 +66,6 @@ STATUS_VACANT = 1
 STATUS_TO_BE_VACANT = 2
 # END
 
-# TODO Opas クラスが役割多すぎるしコードも多すぎるため簡素化する
 class Opas:
     timeframes = []
     gyms = {}
@@ -83,7 +83,6 @@ class Opas:
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
-    # options.add_argument('--window-size=1200x600')
 
     # TODO Cookie を取得しておいてログイン状態で開始?
     # cookie_name = 'JSESSIONID'
@@ -136,12 +135,6 @@ class Opas:
             for i in range(COURT_COUNT):
                 self.__driver.find_element_by_id("i_record{}".format(i)).click()
             self.__driver.find_element_by_xpath(xpath['next']).click()
-            return
-
-        # TODO 体育館を複数選択する
-        # if len(rec_nums) == 0:
-        #     for rec_num in rec_nums:
-        #         print(rec_num)
 
     def set_date(self):
         today = datetime.date.today()
@@ -167,8 +160,8 @@ class Opas:
         # 5週分の HTML を結合して返す
         joined = ''.join(weekly_htmls)
         # デバッグ用
-        with open(OUTPUT_HTML, 'w') as f:
-            f.write(joined)
+        # with open(OUTPUT_HTML, 'w') as f:
+        #     f.write(joined)
 
         self.__driver.quit()
 
@@ -256,9 +249,6 @@ class Opas:
         soup = BeautifulSoup(html, "html.parser")
         tr_list = soup.select('table.facilitiesbox > tbody > tr')
 
-        # 計測start(3.8s)
-        # start = time.time()
-
         for i, tr in enumerate(tr_list):  # 140
             shisetu = tr.select(".shisetu_name")
             if len(shisetu) == 0:
@@ -283,10 +273,6 @@ class Opas:
             if not self.cgym_duplicated(cgym):
                 self.cgyms.append(cgym)
 
-        # 計測end
-        # elapsed_time = time.time() - start
-        # api.logger.info("elapsed_time:{0}".format(elapsed_time) + "[sec]")
-
     def get_vacant_status(self, img_src) -> int:
         if 'maru.png' in img_src:
             return STATUS_VACANT
@@ -295,7 +281,7 @@ class Opas:
         else:
             return STATUS_RESERVED
 
-    def create_message_from_list(self) -> str:
+    def create_message(self) -> str:
         """空きリストからLINEメッセージを作成する"""
         msg = ''
         for cgym in self.cgyms:
@@ -308,7 +294,6 @@ class Opas:
         bot = LINENotifyBot(access_token=LINE_TOKEN)
         bot.send(message=msg[0:len(msg)-2])
 
-    # TODO なんかいけてない
     def get_vacant(self):
         """空きを取得する"""
         # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
@@ -318,7 +303,7 @@ class Opas:
         self.set_date()
         html = self.get_month_html()
         self.get_vacant_list(html)
-        message = self.create_message_from_list()
+        message = self.create_message()
         self.send_line(message)
         return jsonify({
             'status': 'OK',
@@ -329,7 +314,6 @@ class Opas:
 def get_vacant():
     opas = Opas()
     msg = opas.get_vacant()
-    # TODO https://reserve.opas.jp/osakashi/yoyaku/CalendarStatusSelect.cgi を始点に
     return msg
 
 # DEBUG
@@ -341,7 +325,7 @@ def debug_get_vacant():
         html = f.read()
     opas.set_date()
     opas.get_vacant_list(html)
-    message = opas.create_message_from_list()
+    message = opas.create_message()
     opas.send_line(message)
     return jsonify({
         'status': 'OK',
@@ -349,30 +333,30 @@ def debug_get_vacant():
     })
 
 # 予約する
-@api.route('/reserve', methods=['GET'])
-def reserve():
+# TODO int に convert する <int:year>
+@api.route('/reserve/<gym>/<int:year>/<int:month>/<int:day>', methods=['GET'])
+def reserve(gym, year, month, day):
     """予約する"""
+    if request.method != 'GET':
+        return make_response('Bad Request', 404)
+
     opas = Opas()
     driver = opas.init_driver()
     opas.login(OPAS_ID, OPAS_PASSWORD)
     opas.select_category(is_login=True)
-    # opas.select_gym(is_all=False)
     # 体育館・コートを選択
-    # driver.find_element_by_id("i_record16").click() # なにわ第一
-    # driver.find_element_by_id("i_record22").click() # 東成第一
-    driver.find_element_by_id("i_record35").click() # 西成第二
+    gym_rec = "i_record{}".format(gym)
+    driver.find_element_by_id(gym_rec).click()
     driver.find_element_by_xpath(xpath['next']).click()
 
     # 日付選択
-    # TODO 希望の年月日を選択する
-    opas.select_date(2021, 2, 11) # 西成第２の18-21
+    opas.select_date(year, month, day)
     driver.find_element_by_xpath(xpath['display']).click()
 
     # ポップアップ OK
     driver.find_element_by_xpath(xpath['popup_ok']).click()
 
     # 予約対象区分選択（日付選択後）
-    # TODO 希望の日時を指定する
     driver.find_element_by_id("i_record0").click()
 
     # 次に進む
@@ -389,8 +373,6 @@ def reserve():
 
     # kaptcha 取得
     kaptcha = driver.find_element_by_xpath(xpath['kaptcha']).screenshot_as_png
-    # with open('./kaptcha.png', 'wb') as f:
-    #     f.write(kaptcha)
 
     url = "http://2captcha.com/in.php"
     req_data = {
@@ -405,10 +387,10 @@ def reserve():
     }
     msg = requests.post(url, req_data)
     if msg.text[0:2] != 'OK':
-        quit('Service error. Error code:' + msg.text)
+        return make_response(('Service error. Error code:' + msg.text, 500))
     captcha_id = msg.text[3:]
     time.sleep(3)  # 解析が終わるまで待つ
-    res_url = "https://2captcha.com/msg.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
+    res_url = "https://2captcha.com/res.php?key=" + CAPTCHA_KEY + "&action=get&id=" + captcha_id
     msg = requests.get(res_url)
     if msg.status_code == 200 and msg.text[0:2] == 'OK':
         kaptcha_txt = msg.text[3:]
@@ -417,8 +399,10 @@ def reserve():
         driver.find_element_by_xpath(xpath['fix']).click()
         # OK
         driver.find_element_by_xpath(xpath['popup_ok']).click()
-        time.sleep(5)  # 余韻に浸る
-    return ''
+    else:
+        return make_response(('captcha analysis failed', 500))
+        
+    return make_response(('OK', 200))
 
 if __name__ == '__main__':
     api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))

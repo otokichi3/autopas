@@ -10,10 +10,11 @@ services:
     volumes:
         - ./:/app
     ports:
-      - "8080"
+      - "8080:8080"
     environment:
       - opas_id=${OPAS_ID}
       - opas_password=${OPAS_PASSWORD}
       - line_token=${LINE_TOKEN}
+      - line_token_test=${LINE_TOKEN_TEST}
       - captcha_key=${CAPTCHA_KEY}
     command: python /app/main.py
