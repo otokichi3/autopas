@@ -143,6 +143,8 @@ class Opas:
         #     for rec_num in rec_nums:
         #         print(rec_num)
 
+    # TODO 取間期間を変更する
+    # 例えば翌日～翌月末。ただし、23日以降は翌々月末まで。
     def set_date(self):
         today = datetime.date.today()
         self.first_week = today + relativedelta(months=1)
