@@ -12,6 +12,7 @@ from dateutil.relativedelta import relativedelta
 from typing import List, Dict
 from itertools import zip_longest
 
+import schedule
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -26,8 +27,8 @@ from gym import Shisetu, Gym
 import common
 from xpath import xpath
 
-api = Flask(__name__)
-CORS(api)
+app = Flask(__name__)
+CORS(app)
 
 locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 
@@ -243,12 +244,11 @@ class Opas:
             if c.name == cgym.name:
                 return True
         return False
-        
+
     def get_vacant_list(self, html):
         """空きリストを取得する"""
         soup = BeautifulSoup(html, "html.parser")
         tr_list = soup.select('table.facilitiesbox > tbody > tr')
-
         for i, tr in enumerate(tr_list):  # 140
             shisetu = tr.select(".shisetu_name")
             if len(shisetu) == 0:
@@ -290,9 +290,8 @@ class Opas:
 
     def send_line(self, msg: str):
         """LINEを送る"""
-        # 最後の2文字(\n)を削除
         bot = LINENotifyBot(access_token=LINE_TOKEN)
-        bot.send(message=msg[0:len(msg)-2])
+        bot.send(message=msg)
 
     def get_vacant(self):
         """空きを取得する"""
@@ -304,20 +303,27 @@ class Opas:
         html = self.get_month_html()
         self.get_vacant_list(html)
         message = self.create_message()
+        # 最後の2文字(\n)を削除
+        message = message[0:len(message)-2]
+        if len(message) == 0:
+            message = 'なし'
         self.send_line(message)
+
         return jsonify({
             'status': 'OK',
             'data': message
         })
 
-@api.route('/vacants', methods=['GET'])
+@app.route('/vacants', methods=['GET'])
 def get_vacant():
+    # app.logger.info('path: {}'.format(request.path))
+    # app.logger.info('method: {}'.format(request.method))
     opas = Opas()
     msg = opas.get_vacant()
     return msg
 
 # DEBUG
-@api.route('/debug/vacants', methods=['GET'])
+@app.route('/debug/vacants', methods=['GET'])
 def debug_get_vacant():
     """Seleniumを使う代わりにローカルのHTMLファイルから読み込む"""
     opas = Opas()
@@ -332,10 +338,12 @@ def debug_get_vacant():
         'data': message
     })
 
+def wait():
+    pass
+
 # 予約する
-# TODO int に convert する <int:year>
-@api.route('/reserve/<gym>/<int:year>/<int:month>/<int:day>', methods=['GET'])
-def reserve(gym, year, month, day):
+@app.route('/reserve/<gym>/<int:year>/<int:month>/<int:day>/<int:hour>', methods=['GET'])
+def reserve(gym, year, month, day, hour):
     """予約する"""
     if request.method != 'GET':
         return make_response('Bad Request', 404)
@@ -355,6 +363,15 @@ def reserve(gym, year, month, day):
 
     # ポップアップ OK
     driver.find_element_by_xpath(xpath['popup_ok']).click()
+
+    # 7:00 or 12:00 になるまで1秒間隔で待機
+    schedule.every().second.do(wait)
+    while True:
+        now = datetime.datetime.now()
+        if now.hour == hour:
+            break
+        schedule.run_pending()
+        time.sleep(1)
 
     # 予約対象区分選択（日付選択後）
     driver.find_element_by_id("i_record0").click()
@@ -405,4 +422,5 @@ def reserve(gym, year, month, day):
     return make_response(('OK', 200))
 
 if __name__ == '__main__':
-    api.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
+

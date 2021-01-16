@@ -30,7 +30,7 @@ gcloud beta scheduler jobs create http opas-aki-shokai `
 gcloud beta scheduler jobs create http opas-reserve-nishinari-2021-2-4 `
 --time-zone "Asia/Tokyo" `
 --schedule="0 7 * * *" `
---uri="https://opas-ywsyyp4wlq-uc.a.run.app/reserve/34/2021/2/4" `
+--uri="https://opas-ywsyyp4wlq-uc.a.run.app/reserve/34/2021/2/4/7" `
 --oidc-service-account-email="opas-cloud-run-scheduled-invok@opas-badminton-dev.iam.gserviceaccount.com" `
 --http-method="GET" 
 ```
@@ -41,7 +41,7 @@ gcloud beta scheduler jobs create http opas-reserve-nishinari-2021-2-4 `
 gcloud beta scheduler jobs create http opas-reserve-test2 \
 --time-zone "Asia/Tokyo" \
 --schedule="0 7 * * *" \
---uri="https://opas-ywsyyp4wlq-uc.a.run.app/reserve/35/2021/2/18" \
+--uri="https://opas-ywsyyp4wlq-uc.a.run.app/reserve/35/2021/2/18/7" \
 --oidc-service-account-email="opas-cloud-run-scheduled-invok@opas-badminton-dev.iam.gserviceaccount.com" \
 --http-method="GET" \
 ```

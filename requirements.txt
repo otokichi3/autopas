@@ -7,3 +7,4 @@ requests
 # memory_profiler
 python-dotenv
 # twocaptcha
+schedule
