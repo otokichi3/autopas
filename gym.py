@@ -1,3 +1,4 @@
+import logging
 import datetime
 import dataclasses
 from typing import List, Dict
@@ -15,14 +16,6 @@ TIME_NIGHT2 = 5
 時間帯が３つの場合は、9-12=0, 13-16:30=2, 17:30-21=4
 時間帯が４つの場合は、9-12=0, 12-15=1, 15-18=3, 18-21=5
 """
-timeframe_list_org = {
-    TIME_MORNING: '9-12',
-    TIME_AFTERNOON1: '12-15',
-    TIME_AFTERNOON2: '13-16.5',
-    TIME_EVENING: '15-18',
-    TIME_NIGHT1: '17.5-21',
-    TIME_NIGHT2: '18-21',
-}
 timeframe_list = {
     TIME_MORNING: '朝',
     TIME_AFTERNOON1: '昼',
@@ -52,7 +45,6 @@ class Shisetu:
         for k, v in shisetu_shortener.items():
             name = name.replace(k, v)
         
-        # TODO いけてない
         if len(name) == 0:
             return ''
         else:
@@ -79,6 +71,7 @@ class Shisetu:
                 cond1 = (youbi <= 4) and tf < TIME_NIGHT1
                 cond2 = (youbi >= 5) and tf == TIME_MORNING
                 if cond1 or cond2:
+                    logging.info('to be deleted, date: {0}, timeframe: {1}'.format(date, tf))
                     del self.vacant_table[date][tf]
         
         # 空になった日付の後始末
@@ -96,8 +89,10 @@ class Shisetu:
             res += '(' + youbi_list[date_dt.weekday()] + ')'
             for tf, status in tf_list.items():
                 if status == 1:
+                    logging.info('vacant, date: {0}, timeframe: {1}'.format(date, timeframe_list[tf]))
                     res += ' ' + timeframe_list[tf]
                 elif status == 2:
+                    logging.info('to be vacant, date: {0}, timeframe: {1}'.format(date, timeframe_list[tf]))
                     res += ' ' + timeframe_list[tf] + '(予)'
                 else:
                     continue
@@ -169,6 +164,7 @@ class Gym:
                 if len(vacant_days) == 0:
                     continue
                 gym_name = self.shorten(self.name)
+                logging.info('gym name: {}'.format(gym_name))
                 shisetu_name = s.shorten(s.name)
                 res += '[' + gym_name + shisetu_name + ']\n' + vacant_days + '\n'
         return res
