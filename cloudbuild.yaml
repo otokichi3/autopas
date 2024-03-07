@@ -1,0 +1,20 @@
+steps:
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "opas",
+        "--image",
+        "gcr.io/opas-badminton-dev/opas",
+        "--memory",
+        "512M",
+        "--concurrency",
+        "1",
+        "--region",
+        "us-central1",
+        "--platform",
+        "managed",
+      ]
+timeout: 3600s
