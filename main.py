@@ -1,7 +1,6 @@
 import os
 import base64
 import datetime
-import locale
 import time
 import logging
 from dateutil.relativedelta import relativedelta
@@ -26,14 +25,12 @@ from xpath import xpath
 app = Flask(__name__)
 CORS(app)
 
-locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
-
 # TODO Secret Manager から値を取得する（cloudbuild.yaml）
 OPAS_ID = os.environ['opas_id']
 OPAS_PASSWORD = os.environ['opas_password']
 LINE_TOKEN = os.environ['line_token']
 # LINE_TOKEN = os.environ['line_token_test']
-CAPTCHA_KEY = os.environ['captcha_key']
+# CAPTCHA_KEY = os.environ['captcha_key']
 
 GYM_COUNT = 28
 COURT_COUNT = 37
@@ -89,7 +86,8 @@ class Opas:
 
     def init_driver(self):
         """Seleniumドライバを初期化する"""
-        self.__driver = webdriver.Chrome(chromedriver_path, options=self.options)
+        service = Service(chromedriver_path)
+        self.__driver = webdriver.Chrome(service=service, options=self.options)
         self.__driver.get(self.login_url)
 
         """
