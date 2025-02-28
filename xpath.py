@@ -16,7 +16,7 @@ xpath = {
     'shobunrui_badminton': "//div[@id='mmaincolumn']/div/table/tbody/tr[2]",
 
     'next': "//div[@id='fmaincolumn']/div[@id='pagerbox']/a[2]",
-    'display': "//table[@class='none_style']/tbody/tr/td[3]",
+    'display': "//*[@id='selectbox']/ul/li[1]/div/a[2]/img",
     'tablebox': "//div[@id='mmaincolumn']/div[@class='tablebox']",
     'popup_ok': "//input[@id='popup_ok']",
     'kaptcha': "//div[@class='sub_box']/div[2]/p/img[1]",
